@@ -1,0 +1,116 @@
+{
+  "description": "After a blind transfer the old agent holds neither the reservation nor a live leg",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.interaction.v1",
+  "given": {
+    "calls": [
+      {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "agent_id": "agent-7f3a",
+        "customer_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+        "agent_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+        "managed": true,
+        "owner_epoch": "1042",
+        "seq": "12"
+      }
+    ],
+    "blocked_numbers": [],
+    "owner_moving": false
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:TZGNhLmdEaEYVOo1A4XnQKbtKTPeZGfK4dqHqJdgSpI",
+        "blind_transfer": {
+          "target": {
+            "queue_id": "billing"
+          }
+        }
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.interaction.v1.ExecuteResponse",
+        "body": {
+          "outcome": "OUTCOME_DONE",
+          "call": {
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "state": "CALL_STATE_CONNECTED",
+            "held": false,
+            "muted": false,
+            "consulting": false,
+            "parties": [
+              {
+                "role": "PARTY_ROLE_CUSTOMER",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+                "live": true
+              },
+              {
+                "role": "PARTY_ROLE_AGENT",
+                "agent_id": "agent-7f3a",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+                "live": false
+              }
+            ],
+            "recording": "RECORDING_STATE_ON",
+            "managed": true,
+            "owner_epoch": "1042",
+            "seq": "15",
+            "reservation_id": ""
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:FzNDjamPqaScs5FtVqaEU1A__QH0JQwS6-SEU9FZK_A",
+        "hangup": {}
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "status": "PERMISSION_DENIED",
+        "parity_error": "not_your_call"
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Get",
+      "message": "parity.interaction.v1.GetRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "status": "PERMISSION_DENIED",
+        "parity_error": "not_your_call"
+      }
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "description": "Cross-language masking cases for log lines (ARCHITECTURE.md §5.2). interaction-engine's ie-obs (Rust, crates/ie-obs/src/pii.rs) and parity-telephony-controller's obs.Pii (Java) must both pass every case, so their rules can't drift. Taken from ie-obs's own tests on 2026-10-25. normalize, in this order: (1) camelCase split: an '_' is inserted before an ASCII uppercase letter that follows an ASCII lowercase letter or an ASCII digit, or that follows an ASCII uppercase letter and is followed by an ASCII lowercase letter (callerNumber -> caller_Number, DTMFDigit -> DTMF_Digit; a letter after '-' or '_' gets none); (2) ASCII uppercase -> lowercase, '-' -> '_'; (3) a leading 'variable_' stripped. Non-ASCII characters are left as they are. (Revision 2026-10-26: step (1) added, the review's H1; ie-obs takes the same change.) classify: the policy of a field name after normalize (phone: masked to its last 3 digits; secret: '[redacted]'; plain: as is). mask_phone: the masked form of a value under a phone name. mask_structured: a value logged under a plain name, with the policy applied to every key at every depth. Added by parity-telephony-controller's step 0. contract-check runs none of these cases (no third implementation); since 0.2.0 it requires every telephony.proto field marked PII: phone, PCI: digits or SECRET: key to be listed here under phone or secret.",
+  "normalize": [
+    {"in": "Caller-Caller-ID-Number", "out": "caller_caller_id_number"},
+    {"in": "variable_sip_from_user", "out": "sip_from_user"},
+    {"in": "variable_sip_P-Asserted-Identity", "out": "sip_p_asserted_identity"},
+    {"in": "DTMF-Digit", "out": "dtmf_digit"},
+    {"in": "tenant_id", "out": "tenant_id"},
+    {"in": "callerNumber", "out": "caller_number"},
+    {"in": "dtmfDigit", "out": "dtmf_digit"},
+    {"in": "DTMFDigit", "out": "dtmf_digit"},
+    {"in": "callbackNumber", "out": "callback_number"},
+    {"in": "sipCallId", "out": "sip_call_id"},
+    {"in": "callerID", "out": "caller_id"},
+    {"in": "e164Number", "out": "e164_number"},
+    {"in": "HTTPServerURI", "out": "http_server_uri"},
+    {"in": "variableSipFromUser", "out": "sip_from_user"},
+    {"in": "Unique-ID", "out": "unique_id"},
+    {"in": "Caller_ANI", "out": "caller_ani"}
+  ],
+  "classify": {
+    "phone": [
+      "to", "from", "sip_from", "Caller-Caller-ID-Number", "variable_sip_from_user",
+      "variable_sip_P-Asserted-Identity", "Diversion", "Remote-Party-ID", "callback_number",
+      "agent_contact", "caller", "Caller_ANI", "Channel-Name", "Caller-Channel-Name",
+      "Caller-Username", "Caller-Caller-ID-Name", "variable_sip_from_display", "sip_call_id",
+      "dial_string", "originate_string", "rdnis", "dialed_extension", "sip_destination_url",
+      "e164", "msisdn", "callerNumber", "callbackNumber", "sipCallId", "callerID", "e164Number",
+      "fromUser", "remotePartyId",
+      "called_number", "caller_number", "number", "caller_id"
+    ],
+    "secret": [
+      "digits", "dtmf", "sdp", "wrapped_dek", "x_api_key", "esl_password", "refresh_token",
+      "DTMF-Digit", "DTMF-Duration", "variable_dtmf_digits", "dtmf_digit", "digit", "pin",
+      "authorization", "credentials", "passwd", "dek", "sip_body", "switch_r_sdp", "dtmfDigit",
+      "DTMFDigit", "dtmfDigits", "wrappedDek", "apiKey", "eslPassword",
+      "dtmf_sequence"
+    ],
+    "plain": [
+      "reply_to", "num_digits", "tenant_id", "interaction_id", "owner_epoch", "state",
+      "message", "Unique-ID", "Event-Name", "lock_file", "node", "leg_id", "replyTo", "numDigits",
+      "ownerEpoch", "interactionId", "tenantId"
+    ]
+  },
+  "mask_phone": [
+    {"in": "+447700900123", "out": "***123"},
+    {"in": "+44 7700 900123", "out": "***123"},
+    {"in": "sip:+447700900123@carrier.example;user=phone", "out": "***123"},
+    {"in": "07700900123", "out": "***123"},
+    {"in": "1234", "out": "***234"},
+    {"in": "***123", "out": "***123"},
+    {"in": "Phone(***123)", "out": "***123"},
+    {"in": "123", "out": "***"},
+    {"in": "", "out": "***"},
+    {"in": "anonymous", "out": "***"},
+    {"in": "٠١٢٣٤٥٦٧٨٩", "out": "***"},
+    {"in": "99999999999999999999999999999999999999999999999999", "out": "***999"},
+    {"in": "sofia/internal/+447700900123@carrier.example", "out": "***123"},
+    {"in": "Ann +447700900123", "out": "***123"}
+  ],
+  "mask_structured": [
+    {
+      "in": {"headers": {"From": "<sip:+447700900123@x>", "list": [{"to": 447700900123}], "DTMF": "1234"}, "tenant_id": "acme"},
+      "out": {"headers": {"From": "***123", "list": [{"to": "***123"}], "DTMF": "[redacted]"}, "tenant_id": "acme"}
+    },
+    {
+      "in": {"Event-Name": "DTMF", "DTMF-Digit": "5", "DTMF-Duration": "2000", "variable_dtmf_digits": "4111111111111111", "Unique-ID": "6f1c2a9e-0000-4000-8000-000000000001"},
+      "out": {"Event-Name": "DTMF", "DTMF-Digit": "[redacted]", "DTMF-Duration": "[redacted]", "variable_dtmf_digits": "[redacted]", "Unique-ID": "6f1c2a9e-0000-4000-8000-000000000001"}
+    },
+    {
+      "in": {"caller": {"number": "+447700900123", "name": "Ann", "flags": [true, "+447700900456"]}},
+      "out": {"caller": {"number": "***123", "name": "***", "flags": [true, "***456"]}}
+    },
+    {
+      "in": {"call": {"callerNumber": "+447700900123", "dtmfDigits": "4111111111111111", "sipCallId": "a84b@+447700900999", "ownerEpoch": 7, "legs": [{"calleeNumber": "07700900456", "interactionId": "0192f3c1-0000-7000-8000-000000000001"}]}},
+      "out": {"call": {"callerNumber": "***123", "dtmfDigits": "[redacted]", "sipCallId": "***999", "ownerEpoch": 7, "legs": [{"calleeNumber": "***456", "interactionId": "0192f3c1-0000-7000-8000-000000000001"}]}}
+    }
+  ]
+}

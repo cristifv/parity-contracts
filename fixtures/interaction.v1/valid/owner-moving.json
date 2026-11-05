@@ -1,0 +1,46 @@
+{
+  "description": "An adoption gap: retry with the same command_id",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.interaction.v1",
+  "given": {
+    "calls": [
+      {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "agent_id": "agent-7f3a",
+        "customer_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+        "agent_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+        "managed": true,
+        "owner_epoch": "1042",
+        "seq": "12"
+      }
+    ],
+    "blocked_numbers": [],
+    "owner_moving": true
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:lTo7fSgxRKm3rp2tY8su666XzMSAFuAa2xs2MdSd3yQ",
+        "hangup": {}
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "status": "UNAVAILABLE",
+        "parity_error": "owner_moving"
+      }
+    }
+  ]
+}

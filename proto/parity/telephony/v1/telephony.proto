@@ -1,0 +1,1138 @@
+// interaction-engine (client) <-> parity-telephony-controller (server; one per media node).
+// The rules are in CONVENTIONS.md, "The telephony contract" (from TC's ADR 0001). As routing.proto:
+// proto3 only, with no optional, maps, Any, extensions or well-known types. A field's leading
+// comment carries its mark (CONVENTIONS.md "Marks"): phone numbers (E.164), DTMF digits (never
+// logged, traced or stored) and key material (never logged).
+syntax = "proto3";
+
+package parity.telephony.v1;
+
+option java_multiple_files = true;
+option java_package = "parity.contracts.telephony.v1";
+
+// Served by every media node's TC (port 9700, mTLS; clients parity-interaction-engine.<bin>).
+service TelephonyService {
+  // A replica's events. The newest stream per replica_id wins.
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
+  // Batched acks, when no other RPC carries them.
+  rpc Acknowledge(AcknowledgeRequest) returns (AcknowledgeResponse);
+  // A new owner: verify, raise the fences, snapshot, replay.
+  rpc ClaimSession(ClaimSessionRequest) returns (ClaimSessionResponse);
+  // A snapshot, with no fence change (resync).
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  // An unclaimed arrival: one redirect, or a refusal.
+  rpc DeclineArrival(DeclineArrivalRequest) returns (DeclineArrivalResponse);
+  // 180 Ringing on a parked arrival.
+  rpc RingLeg(RingLegRequest) returns (RingLegResponse);
+  // 200 OK with parity-ms's answer; opens the media.
+  rpc AnswerLeg(AnswerLegRequest) returns (AnswerLegResponse);
+  // A final failure response to a claimed arrival.
+  rpc RejectLeg(RejectLegRequest) returns (RejectLegResponse);
+  // Originates a leg; the first leg of an outbound session creates it.
+  rpc AddLeg(AddLegRequest) returns (AddLegResponse);
+  // Hangs up one leg and detaches its media.
+  rpc RemoveLeg(RemoveLegRequest) returns (RemoveLegResponse);
+  // Hangs up every leg, deletes the media, finishes recordings.
+  rpc EndSession(EndSessionRequest) returns (EndSessionResponse);
+  // A tenant prompt into one leg.
+  rpc Play(PlayRequest) returns (PlayResponse);
+  // Stops a play.
+  rpc StopPlay(StopPlayRequest) returns (StopPlayResponse);
+  // Digits reach IE only while ON.
+  rpc SetDigitReporting(SetDigitReportingRequest) returns (SetDigitReportingResponse);
+  // RFC 4733 digits toward one leg.
+  rpc SendDtmf(SendDtmfRequest) returns (SendDtmfResponse);
+  // Silences what a leg sends, or stops doing so.
+  rpc SetMute(SetMuteRequest) returns (SetMuteResponse);
+  // The session's hold: both sides muted, music to the customer.
+  rpc SetHold(SetHoldRequest) returns (SetHoldResponse);
+  // A leg hears only music (the customer in a consult).
+  rpc SetIsolation(SetIsolationRequest) returns (SetIsolationResponse);
+  // A supervisor's listen, whisper or barge.
+  rpc SetMonitorMode(SetMonitorModeRequest) returns (SetMonitorModeResponse);
+  // A leg's DTMF action codes and facet locks.
+  rpc SetDtmfActions(SetDtmfActionsRequest) returns (SetDtmfActionsResponse);
+  // Records a leg with a supplied key.
+  rpc StartRecording(StartRecordingRequest) returns (StartRecordingResponse);
+  // Stops; RecordingStopped carries the result.
+  rpc StopRecording(StopRecordingRequest) returns (StopRecordingResponse);
+}
+
+// Field 1 of every per-session command: who acts, its fence, what it has processed.
+message SessionOwner {
+  // The tenant (a DNS label); equals the tenant-id metadata.
+  string tenant_id = 1;
+  // The interaction (a UUID); one session per interaction.
+  string interaction_id = 2;
+  // The create revision of ie/owner/{interaction_id}; at least 1.
+  uint64 owner_epoch = 3;
+  // The IE replica whose Watch stream gets the session's events.
+  string replica_id = 4;
+  // The highest delivery_seq processed in acked_incarnation; 0 for none.
+  uint64 acked_delivery_seq = 5;
+  // The TC incarnation acked_delivery_seq belongs to; TC ignores another's.
+  string acked_incarnation = 6;
+}
+// The session an event is about.
+message SessionRef {
+  // The tenant (a DNS label).
+  string tenant_id = 1;
+  // The interaction (a UUID).
+  string interaction_id = 2;
+  // TC's fence when the event was made; 0 before a claim.
+  uint64 owner_epoch = 3;
+}
+
+// Set once per leg. Scopes DTMF actions: none for CUSTOMER and EXTERNAL.
+enum LegRole {
+  // Unknown.
+  LEG_ROLE_UNSPECIFIED = 0;
+  // Customer.
+  LEG_ROLE_CUSTOMER = 1;
+  // Agent.
+  LEG_ROLE_AGENT = 2;
+  // Supervisor.
+  LEG_ROLE_SUPERVISOR = 3;
+  // External.
+  LEG_ROLE_EXTERNAL = 4;
+}
+// PARKED: an unanswered arrival. Unknown: resync.
+enum LegState {
+  // Unknown.
+  LEG_STATE_UNSPECIFIED = 0;
+  // Parked.
+  LEG_STATE_PARKED = 1;
+  // Originating.
+  LEG_STATE_ORIGINATING = 2;
+  // Ringing.
+  LEG_STATE_RINGING = 3;
+  // Answered.
+  LEG_STATE_ANSWERED = 4;
+  // Ended.
+  LEG_STATE_ENDED = 5;
+}
+// Why a leg ended; sip_status has the detail. Unknown: SYSTEM.
+enum EndCause {
+  // Unknown.
+  END_CAUSE_UNSPECIFIED = 0;
+  // Normal.
+  END_CAUSE_NORMAL = 1;
+  // No answer.
+  END_CAUSE_NO_ANSWER = 2;
+  // Busy.
+  END_CAUSE_BUSY = 3;
+  // Declined.
+  END_CAUSE_DECLINED = 4;
+  // Unreachable.
+  END_CAUSE_UNREACHABLE = 5;
+  // Canceled.
+  END_CAUSE_CANCELED = 6;
+  // Media failed.
+  END_CAUSE_MEDIA_FAILED = 7;
+  // System.
+  END_CAUSE_SYSTEM = 8;
+}
+// SYSTEM: TC or freeswitch on its own (a hangup hook, a failure).
+enum EndedBy {
+  // Unknown.
+  ENDED_BY_UNSPECIFIED = 0;
+  // Remote.
+  ENDED_BY_REMOTE = 1;
+  // Command.
+  ENDED_BY_COMMAND = 2;
+  // System.
+  ENDED_BY_SYSTEM = 3;
+}
+// The far end's media stack.
+enum Endpoint {
+  // Unknown.
+  ENDPOINT_UNSPECIFIED = 0;
+  // Webrtc.
+  ENDPOINT_WEBRTC = 1;
+  // Sip.
+  ENDPOINT_SIP = 2;
+}
+// Unspecified: G711_ONLY. Opus needs the node capability "opus".
+enum CodecPolicy {
+  // Unknown.
+  CODEC_POLICY_UNSPECIFIED = 0;
+  // G711 only.
+  CODEC_POLICY_G711_ONLY = 1;
+  // Allow opus.
+  CODEC_POLICY_ALLOW_OPUS = 2;
+}
+// A supervisor's mode.
+enum MonitorMode {
+  // Unknown.
+  MONITOR_MODE_UNSPECIFIED = 0;
+  // Listen.
+  MONITOR_MODE_LISTEN = 1;
+  // Whisper.
+  MONITOR_MODE_WHISPER = 2;
+  // Barge.
+  MONITOR_MODE_BARGE = 3;
+}
+// MASKED: DtmfReceived without the digit (timing only). Unknown: OFF.
+enum DigitReporting {
+  // Unknown.
+  DIGIT_REPORTING_UNSPECIFIED = 0;
+  // Off.
+  DIGIT_REPORTING_OFF = 1;
+  // Masked.
+  DIGIT_REPORTING_MASKED = 2;
+  // On.
+  DIGIT_REPORTING_ON = 3;
+}
+// How a digit was detected.
+enum DigitSource {
+  // Unknown.
+  DIGIT_SOURCE_UNSPECIFIED = 0;
+  // Rfc4733.
+  DIGIT_SOURCE_RFC4733 = 1;
+  // Inband.
+  DIGIT_SOURCE_INBAND = 2;
+}
+// parity-ms's P5 actions. AGENT: mute and recording; SUPERVISOR: mute and the modes.
+enum DtmfActionKind {
+  // Unknown.
+  DTMF_ACTION_KIND_UNSPECIFIED = 0;
+  // Mute.
+  DTMF_ACTION_KIND_MUTE = 1;
+  // Unmute.
+  DTMF_ACTION_KIND_UNMUTE = 2;
+  // Mute toggle.
+  DTMF_ACTION_KIND_MUTE_TOGGLE = 3;
+  // Recording pause.
+  DTMF_ACTION_KIND_RECORDING_PAUSE = 4;
+  // Recording resume.
+  DTMF_ACTION_KIND_RECORDING_RESUME = 5;
+  // Recording toggle.
+  DTMF_ACTION_KIND_RECORDING_TOGGLE = 6;
+  // Listen.
+  DTMF_ACTION_KIND_LISTEN = 7;
+  // Whisper.
+  DTMF_ACTION_KIND_WHISPER = 8;
+  // Barge.
+  DTMF_ACTION_KIND_BARGE = 9;
+}
+// NOOP: already so; LOCKED: a pinned facet. Unknown: REFUSED.
+enum DtmfActionResult {
+  // Unknown.
+  DTMF_ACTION_RESULT_UNSPECIFIED = 0;
+  // Applied.
+  DTMF_ACTION_RESULT_APPLIED = 1;
+  // Noop.
+  DTMF_ACTION_RESULT_NOOP = 2;
+  // Refused.
+  DTMF_ACTION_RESULT_REFUSED = 3;
+  // Locked.
+  DTMF_ACTION_RESULT_LOCKED = 4;
+}
+// A leg state IE can pin against DTMF actions.
+enum Facet {
+  // Unknown.
+  FACET_UNSPECIFIED = 0;
+  // Recording.
+  FACET_RECORDING = 1;
+  // Mute.
+  FACET_MUTE = 2;
+  // Mode.
+  FACET_MODE = 3;
+}
+// A recording's state; a resume only resumes a pause.
+enum RecordingState {
+  // Unknown.
+  RECORDING_STATE_UNSPECIFIED = 0;
+  // Active.
+  RECORDING_STATE_ACTIVE = 1;
+  // Paused.
+  RECORDING_STATE_PAUSED = 2;
+  // Stopped.
+  RECORDING_STATE_STOPPED = 3;
+}
+// TC's choice: a two-leg call, a conference from the third party on.
+enum MediaKind {
+  // Unknown.
+  MEDIA_KIND_UNSPECIFIED = 0;
+  // None.
+  MEDIA_KIND_NONE = 1;
+  // Call.
+  MEDIA_KIND_CALL = 2;
+  // Conference.
+  MEDIA_KIND_CONFERENCE = 3;
+}
+// ENDED: a tombstone, until the owner acks SessionEnded (or 24 h).
+enum SessionState {
+  // Unknown.
+  SESSION_STATE_UNSPECIFIED = 0;
+  // Arriving.
+  SESSION_STATE_ARRIVING = 1;
+  // Active.
+  SESSION_STATE_ACTIVE = 2;
+  // Ended.
+  SESSION_STATE_ENDED = 3;
+}
+// Why a session ended.
+enum SessionEndReason {
+  // Unknown.
+  SESSION_END_REASON_UNSPECIFIED = 0;
+  // All legs gone.
+  SESSION_END_REASON_ALL_LEGS_GONE = 1;
+  // Ended by owner.
+  SESSION_END_REASON_ENDED_BY_OWNER = 2;
+  // Arrival unclaimed.
+  SESSION_END_REASON_ARRIVAL_UNCLAIMED = 3;
+  // Arrival declined.
+  SESSION_END_REASON_ARRIVAL_DECLINED = 4;
+  // Freeswitch lost.
+  SESSION_END_REASON_FREESWITCH_LOST = 5;
+  // Parity ms lost.
+  SESSION_END_REASON_PARITY_MS_LOST = 6;
+  // Drain timeout.
+  SESSION_END_REASON_DRAIN_TIMEOUT = 7;
+}
+// WRONG_BIN: offer it to bin; REFUSED: answer sip_status.
+enum DeclineReason {
+  // Unknown.
+  DECLINE_REASON_UNSPECIFIED = 0;
+  // Wrong bin.
+  DECLINE_REASON_WRONG_BIN = 1;
+  // Refused.
+  DECLINE_REASON_REFUSED = 2;
+}
+// Why a play ended.
+enum PlayEndReason {
+  // Unknown.
+  PLAY_END_REASON_UNSPECIFIED = 0;
+  // Completed.
+  PLAY_END_REASON_COMPLETED = 1;
+  // Stopped.
+  PLAY_END_REASON_STOPPED = 2;
+  // Failed.
+  PLAY_END_REASON_FAILED = 3;
+  // Leg gone.
+  PLAY_END_REASON_LEG_GONE = 4;
+}
+// Why a play never started (PlayFailed, 0.17.0).
+enum PlayFailReason {
+  // Unknown.
+  PLAY_FAIL_REASON_UNSPECIFIED = 0;
+  // No such prompt for the tenant on this node, or it can't be played (unreadable, corrupt, empty).
+  PLAY_FAIL_REASON_PROMPT_UNKNOWN = 1;
+  // parity-ms couldn't take it (busy, or unreachable after TC's retries); TC stops it if it starts later.
+  PLAY_FAIL_REASON_PARITY_MS_UNAVAILABLE = 2;
+  // The leg ended first.
+  PLAY_FAIL_REASON_LEG_GONE = 3;
+  // A newer Play on the leg took its place before it started.
+  PLAY_FAIL_REASON_REPLACED = 4;
+  // TC called it off for another reason than the owner's StopPlay (which ends it with PlayFinished(STOPPED)).
+  PLAY_FAIL_REASON_CANCELLED = 5;
+}
+// ADDRESS: followed; UNANSWERABLE: a codec change (alerted); UNREAD: no new SDP found.
+enum RemoteMediaKind {
+  // Unknown.
+  REMOTE_MEDIA_KIND_UNSPECIFIED = 0;
+  // Address.
+  REMOTE_MEDIA_KIND_ADDRESS = 1;
+  // Unanswerable.
+  REMOTE_MEDIA_KIND_UNANSWERABLE = 2;
+  // Unread.
+  REMOTE_MEDIA_KIND_UNREAD = 3;
+}
+
+// Opens a replica's stream; bin must be the caller's mTLS identity's. replica_id: registered under ie/replicas/{bin}/ (TC checks once per stream); bin: the replica's bin; capabilities: what this IE release uses (N/N-1), informational in 0.2.0.
+message WatchRequest {
+  // The IE replica.
+  string replica_id = 1;
+  // The replica's bin
+  string bin = 2;
+  // What this IE release uses (N/N-1), informational in 0.2.0.
+  repeated string capabilities = 3;
+}
+// One message on a stream.
+message WatchResponse {
+  // This TC run (a UUIDv7 made at start). A new one: IE resets its watermarks and resyncs.
+  string incarnation = 1;
+  // The media node.
+  string node_id = 2;
+  // Per session and incarnation, from 1; 0 for node_status and heartbeat (never replayed).
+  uint64 delivery_seq = 3;
+  // Absent for node_status and heartbeat.
+  SessionRef session = 4;
+  // When TC saw what it reports, epoch ms; the same on every replay.
+  int64 at_ms = 5;
+  // Exactly one.
+  oneof event {
+    // A parked call offered to this replica.
+    Arrived arrived = 10;
+    // A leg's new state.
+    LegUpdate leg = 11;
+    // A digit, while the leg's reporting is ON or MASKED.
+    DtmfReceived dtmf = 12;
+    // A play ended.
+    PlayFinished play_finished = 13;
+    // parity-ms is writing.
+    RecordingStarted recording_started = 14;
+    // The recording is final.
+    RecordingStopped recording_stopped = 15;
+    // Media stopped or came back on a leg (IE's R8).
+    MediaActivity media_activity = 16;
+    // A far end held or resumed.
+    RemoteHold remote_hold = 17;
+    // A far end's re-INVITE changed its media.
+    RemoteMediaChanged remote_media_changed = 18;
+    // parity-ms acted (or not) on a DTMF code. Never digits.
+    DtmfAction dtmf_action = 19;
+    // A session's last event; the owner's ack releases its tombstone.
+    SessionEnded session_ended = 20;
+    // Every 5 s and on a change.
+    NodeStatus node_status = 21;
+    // Every 2 s.
+    Heartbeat heartbeat = 22;
+    // A play asked with result_events started (0.17.0).
+    PlayStarted play_started = 23;
+    // A play asked with result_events ended without starting (0.17.0).
+    PlayFailed play_failed = 24;
+  }
+}
+// A parked inbound call; session.tenant_id is X-Tenant-ID's claim, which IE verifies. No SDP.
+message Arrived {
+  // The bin it is offered to (X-CC-Bin, or the bin a decline named).
+  string bin = 1;
+  // The customer's leg (freeswitch's uuid).
+  string leg_id = 2;
+  // As received.
+  string sip_call_id = 3;
+  // PII: phone. The number dialled.
+  string called_number = 4;
+  // PII: phone. Empty for an anonymous caller.
+  string caller_number = 5;
+  // TC's allow-list only; empty by default.
+  repeated SipHeader headers = 6;
+  // 1 for the first offer; +1 for each re-offer or redirect.
+  uint32 attempt = 7;
+  // The bin that declined it; empty unless redirected.
+  string redirected_from_bin = 8;
+  // TC answers 503 then, unless a verified command or claim came first.
+  int64 deadline_ms = 9;
+  // The carrier trunk TC matched (its configuration).
+  string trunk_id = 10;
+}
+// An allow-listed SIP header; never an identity, authorization or routing-history header (CONVENTIONS).
+message SipHeader {
+  // The header's name.
+  string name = 1;
+  // Its value; never logged.
+  string value = 2;
+}
+// A leg's new state.
+message LegUpdate {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // The leg's role.
+  LegRole role = 2;
+  // RINGING, ANSWERED or ENDED (PARKED and ORIGINATING appear in snapshots only).
+  LegState state = 3;
+  // ENDED only.
+  EndCause cause = 4;
+  // ENDED: the final SIP status, 0 if none.
+  uint32 sip_status = 5;
+  // ENDED only.
+  EndedBy ended_by = 6;
+  // 0 if it never answered.
+  int64 answered_at_ms = 7;
+}
+// A digit from a leg whose reporting is ON or MASKED.
+message DtmfReceived {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // PCI: digits. 0-9, *, #, A-D; empty when reporting is MASKED.
+  string digit = 2;
+  // The tone's length, ms.
+  uint32 duration_ms = 3;
+  // How it was detected.
+  DigitSource source = 4;
+  // The SetDigitReporting that allowed it; IE drops a stale one.
+  string collection_id = 5;
+}
+// A play ended.
+message PlayFinished {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // The play (a UUID IE made).
+  string play_id = 2;
+  // Why it ended.
+  PlayEndReason reason = 3;
+  // How much of it was heard, in ms; a loop's every repeat counted.
+  uint32 played_ms = 4;
+}
+// A play asked with result_events started; PlayFinished or nothing else follows (0.17.0).
+message PlayStarted {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // The play (a UUID IE made).
+  string play_id = 2;
+}
+// A play asked with result_events ended without starting; nothing else follows for it (0.17.0).
+message PlayFailed {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // The play (a UUID IE made).
+  string play_id = 2;
+  // Why it never started.
+  PlayFailReason reason = 3;
+}
+// parity-ms opened the recording file.
+message RecordingStarted {
+  // The recording (a UUID IE made).
+  string recording_id = 1;
+  // The leg (a UUID).
+  string leg_id = 2;
+}
+// A finished recording (IE's R9), for the manifest.
+message RecordingStopped {
+  // The recording (a UUID IE made).
+  string recording_id = 1;
+  // The leg (a UUID).
+  string leg_id = 2;
+  // The file on the node, under the tenant's directory; empty for the null sink (nothing written).
+  string path = 3;
+  // Its size; 0 for the null sink.
+  uint64 size_bytes = 4;
+  // Its length, pauses included.
+  uint32 duration_ms = 5;
+  // Lowercase hex of the file; empty for the null sink.
+  string sha256 = 6;
+  // As supplied; not secret.
+  bytes wrapped_dek = 7;
+  // As supplied.
+  string kek_id = 8;
+  // Silence written while paused.
+  repeated RecordingPause pauses = 9;
+}
+// A pause in a recording: silence was written.
+message RecordingPause {
+  // When the pause began, epoch ms.
+  int64 start_ms = 1;
+  // When it ended, epoch ms.
+  int64 end_ms = 2;
+  // The role of the leg that paused it.
+  LegRole role = 3;
+  // True if a DTMF action code paused it, false if a command did.
+  bool by_dtmf = 4;
+}
+// Media stopped or came back on a leg (IE's R8).
+message MediaActivity {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // False: no media from the leg for parity-ms's inactivity time.
+  bool active = 2;
+}
+// A far end held or resumed; IE decides what follows.
+message RemoteHold {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // True: the far end held (sendonly or inactive); false: it resumed (sendrecv).
+  bool on = 2;
+}
+// What TC did with a far end's re-INVITE.
+message RemoteMediaChanged {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // What TC did: ADDRESS followed, UNANSWERABLE (alerted), UNREAD.
+  RemoteMediaKind kind = 2;
+}
+// parity-ms matched an action code (P5). Never the digits or the dtmf_sequence.
+message DtmfAction {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // The leg's role.
+  LegRole role = 2;
+  // As configured (a toggle stays a toggle).
+  DtmfActionKind action = 3;
+  // What happened.
+  DtmfActionResult result = 4;
+  // The leg's state afterwards.
+  LegMediaState state = 5;
+}
+// One state per leg, shared by IE's commands and DTMF actions.
+message LegMediaState {
+  // Its sending is silenced.
+  bool muted = 1;
+  // The session's recording (one pause for all of them); unset while the session never recorded.
+  RecordingState recording = 2;
+  // SUPERVISOR only
+  MonitorMode mode = 3;
+  // SUPERVISOR only, whom WHISPER speaks to.
+  string whisper_to_leg_id = 4;
+}
+// A session's last event; the owner's ack releases its tombstone.
+message SessionEnded {
+  // Why the session ended.
+  SessionEndReason reason = 1;
+  // What an arrival was answered with.
+  uint32 sip_status = 2;
+}
+// The node, for outbound node choice and N/N-1.
+message NodeStatus {
+  // Live sessions.
+  uint32 sessions = 1;
+  // parity-ms legs left
+  uint32 free_legs = 2;
+  // No new sessions
+  bool draining = 3;
+  // Commands get rebuilding
+  bool rebuilding = 4;
+  // TC's version
+  string version = 5;
+  // Features beyond 0.2.0's base set, e.g. "opus", "m1".
+  repeated string capabilities = 6;
+}
+// The stream is alive; the envelope's at_ms is TC's clock.
+message Heartbeat {}
+
+// Acknowledges Watch messages for many sessions at once.
+message AcknowledgeRequest {
+  // At most 500; owner_epoch 0 acknowledges an unclaimed Arrived (the offered replica only).
+  repeated SessionOwner acks = 1;
+}
+// The result of an Acknowledge.
+message AcknowledgeResponse {
+  // Acks refused as stale, foreign or of another incarnation.
+  uint32 ignored = 1;
+}
+// Repeat-safe by the epoch; a repeat re-applies the fence raise.
+message ClaimSessionRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+}
+// The snapshot; unacknowledged events follow on the owner's stream.
+message ClaimSessionResponse {
+  // The session's snapshot.
+  Session session = 1;
+  // True for a repeat: the first answer is returned.
+  bool existing = 2;
+  // This TC run, as in WatchResponse.incarnation (0.2.2): a new one means TC restarted.
+  string incarnation = 3;
+}
+// Read-only; any replica of the session's bin.
+message GetSessionRequest {
+  // The tenant (a DNS label).
+  string tenant_id = 1;
+  // The interaction (a UUID).
+  string interaction_id = 2;
+  // The IE replica.
+  string replica_id = 3;
+}
+// The snapshot.
+message GetSessionResponse {
+  // The session's snapshot.
+  Session session = 1;
+  // This TC run, as in WatchResponse.incarnation (0.2.2): a new one means TC restarted.
+  string incarnation = 2;
+}
+// A snapshot. For an ENDED session, its tombstone.
+message Session {
+  // The tenant (a DNS label).
+  string tenant_id = 1;
+  // The interaction (a UUID).
+  string interaction_id = 2;
+  // TC's fence.
+  uint64 owner_epoch = 3;
+  // Where its events go.
+  string owner_replica_id = 4;
+  // Its state.
+  SessionState state = 5;
+  // Call or conference.
+  MediaKind media = 6;
+  // SetHold's state.
+  bool on_hold = 7;
+  // Every leg, ended ones included.
+  repeated LegSnapshot legs = 8;
+  // Every recording.
+  repeated RecordingSnapshot recordings = 9;
+  // The highest delivery_seq sent in this incarnation.
+  uint64 last_delivery_seq = 10;
+  // ENDED only.
+  SessionEndReason end_reason = 11;
+  // ENDED only.
+  int64 ended_at_ms = 12;
+  // ARRIVING only.
+  int64 arrival_deadline_ms = 13;
+}
+// A leg in a snapshot.
+message LegSnapshot {
+  // The leg (a UUID).
+  string leg_id = 1;
+  // Its role.
+  LegRole role = 2;
+  // Its state.
+  LegState state = 3;
+  // Its media stack.
+  Endpoint endpoint = 4;
+  // Its Call-ID.
+  string sip_call_id = 5;
+  // Mute, recording, mode.
+  LegMediaState media = 6;
+  // SetIsolation's state.
+  bool isolated = 7;
+  // OFF after a claim by a new epoch and after a TC restart.
+  DigitReporting digit_reporting = 8;
+  // While reporting is ON or MASKED.
+  string collection_id = 9;
+  // The current play, if any.
+  string play_id = 10;
+  // ENDED only.
+  EndCause cause = 11;
+  // ENDED only.
+  uint32 sip_status = 12;
+  // ENDED only.
+  EndedBy ended_by = 13;
+  // 0 if never.
+  int64 answered_at_ms = 14;
+  // ENDED only.
+  int64 ended_at_ms = 15;
+}
+// A recording in a snapshot.
+message RecordingSnapshot {
+  // The recording (a UUID IE made).
+  string recording_id = 1;
+  // The leg (a UUID).
+  string leg_id = 2;
+  // Its state.
+  RecordingState state = 3;
+}
+
+// From the replica the current attempt was offered to; nothing was claimed.
+message DeclineArrivalRequest {
+  // The tenant (a DNS label).
+  string tenant_id = 1;
+  // The interaction (a UUID).
+  string interaction_id = 2;
+  // The IE replica.
+  string replica_id = 3;
+  // The leg (a UUID).
+  string leg_id = 4;
+  // Redirect or refuse.
+  DeclineReason reason = 5;
+  // WRONG_BIN: the tenant's bin (tp/tenants/), one of the zone's.
+  string bin = 6;
+  // REFUSED: 403, 404, 480, 503 or 603.
+  uint32 sip_status = 7;
+}
+// The result of a DeclineArrival.
+message DeclineArrivalResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // TC sent a final response (REFUSED, or a second decline: 503).
+  bool rejected = 2;
+}
+// Repeat-safe by leg_id.
+message RingLegRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+}
+// The result.
+message RingLegResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// Repeat-safe by leg_id (answered: ok, existing).
+message AnswerLegRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+}
+// After the 200 OK is sent.
+message AnswerLegResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// Rejects a claimed, unanswered arrival with a final SIP status. Repeat-safe by leg_id.
+message RejectLegRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // 404, 480, 486, 503 or 603.
+  uint32 sip_status = 4;
+}
+// The result.
+message RejectLegResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// Repeat-safe by leg_id: the same parameters get the first answer; others leg_conflict.
+message AddLegRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // A UUIDv7 IE made and checkpointed first; freeswitch's uuid for the leg.
+  string leg_id = 3;
+  // Not changed later.
+  LegRole role = 4;
+  // Exactly one.
+  oneof destination {
+    // The agent softphone's SIP URI (routing's Assigned).
+    string agent_contact = 5;
+    // A number through a trunk.
+    PstnDestination pstn = 6;
+  }
+  // PII: phone. Presented on a PSTN leg; IE checked it is the tenant's.
+  string caller_id = 7;
+  // 5 to 120.
+  uint32 ring_timeout_s = 8;
+  // WEBRTC or SIP.
+  Endpoint endpoint = 9;
+  // G711_ONLY unless the tenant's policy allows Opus.
+  CodecPolicy codec_policy = 10;
+  // Joins with its sending silenced (any role; LISTEN is never heard anyway).
+  bool start_muted = 11;
+  // SUPERVISOR only: the first mode.
+  MonitorMode monitor_mode = 12;
+  // SUPERVISOR only.
+  string whisper_to_leg_id = 13;
+  // AGENT and SUPERVISOR only; on the leg's media before it rings (capability dtmf_actions).
+  DtmfActions dtmf_actions = 14;
+}
+// A number reached through one of the tenant's trunks.
+message PstnDestination {
+  // PII: phone (E.164)
+  string number = 1;
+  // The tenant's trunk.
+  string trunk_id = 2;
+}
+// Accepted: the originate started; LegUpdate events follow.
+message AddLegResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // The leg's state now: ENDED for a retry after the leg ended (it is never originated again).
+  LegState state = 2;
+  // ENDED only.
+  EndCause cause = 3;
+}
+// Hangs up one leg (cause NORMAL or SYSTEM). Repeat-safe by leg_id.
+message RemoveLegRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // NORMAL or SYSTEM.
+  EndCause cause = 4;
+}
+// The result.
+message RemoveLegResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if it had already ended; still a success.
+  bool already_gone = 2;
+}
+// Hangs up every leg, deletes the media, finishes recordings. Repeat-safe by the session.
+message EndSessionRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // NORMAL or SYSTEM.
+  EndCause cause = 3;
+}
+// SessionEnded follows.
+message EndSessionResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if it had already ended; still a success.
+  bool already_gone = 2;
+}
+// Plays a tenant prompt into one leg. Repeat-safe by play_id.
+message PlayRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // The play (a UUID IE made).
+  string play_id = 4;
+  // A tenant prompt, ^[A-Za-z0-9_.-]{1,128}$.
+  string prompt_id = 5;
+  // Repeat the prompt until stopped or the leg ends (hold music): no gap and no PlayFinished between repeats.
+  bool loop = 6;
+  // 0.17.0, the play saga: the answer means TC took the play; PlayStarted then PlayFinished, or PlayFailed, follow. False: answered once it started (or failed).
+  bool result_events = 7;
+}
+// Started (with result_events: taken; the events tell the outcome).
+message PlayResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// Repeat-safe by play_id.
+message StopPlayRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // The play (a UUID IE made).
+  string play_id = 4;
+}
+// PlayFinished(STOPPED) follows unless already gone, also for a play that hadn't started yet.
+message StopPlayResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if it had already ended; still a success.
+  bool already_gone = 2;
+}
+// Sets a leg's digit reporting: ON only while IE collects digits; MASKED for "press any key".
+message SetDigitReportingRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // OFF, MASKED or ON.
+  DigitReporting mode = 4;
+  // A UUID per collection, echoed on each DtmfReceived
+  string collection_id = 5;
+  // TC turns reporting OFF after this, 1 to 300.
+  uint32 max_duration_s = 6;
+}
+// The result.
+message SetDigitReportingResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// Sends RFC 4733 digits toward one leg.
+message SendDtmfRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // PCI: digits. ^[0-9*#A-D]{1,32}$.
+  string digits = 4;
+}
+// Queued to parity-ms.
+message SendDtmfResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// Silences what a leg sends, or stops doing so.
+message SetMuteRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // True: silence what the leg sends.
+  bool muted = 4;
+}
+// The result.
+message SetMuteResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if the state moved.
+  bool changed = 2;
+}
+// Holds or resumes the session: both sides muted, music to the customer.
+message SetHoldRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // True: hold; false: resume.
+  bool on = 3;
+  // The hold music played to the customer.
+  string music_prompt_id = 4;
+}
+// The result.
+message SetHoldResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if the state moved.
+  bool changed = 2;
+}
+// Isolates a leg: it hears only music (the customer during a consult).
+message SetIsolationRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // True: the leg hears only music_prompt_id.
+  bool isolated = 4;
+  // The music the isolated leg hears.
+  string music_prompt_id = 5;
+}
+// The result.
+message SetIsolationResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if the state moved.
+  bool changed = 2;
+}
+// Sets a supervisor leg's mode; WHISPER needs whisper_to_leg_id.
+message SetMonitorModeRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // LISTEN, WHISPER or BARGE.
+  MonitorMode mode = 4;
+  // Whom WHISPER speaks to.
+  string whisper_to_leg_id = 5;
+}
+// TC moves a two-leg call into a conference first if needed.
+message SetMonitorModeResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if the state moved.
+  bool changed = 2;
+}
+// Replaces a leg's action codes and locks.
+message SetDtmfActionsRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // The codes and locks; empty bindings turn the codes off.
+  DtmfActions actions = 4;
+}
+// The result.
+message SetDtmfActionsResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// A leg's action codes and locks (tenant configuration, platform defaults).
+message DtmfActions {
+  // At most 8, none a prefix of another, each allowed by the leg's role.
+  repeated DtmfActionBinding bindings = 1;
+  // Facets DTMF can't change (RECORDING when consent forbids recording: the session's, held while any leg asks)
+  repeated Facet locks = 2;
+  // 0 means 2000.
+  uint32 inter_digit_timeout_ms = 3;
+}
+// One action code: a DTMF sequence and the action it triggers.
+message DtmfActionBinding {
+  // PCI: digits, ^\*[0-9#A-D]{1,7}$ (the one prefix)
+  string dtmf_sequence = 1;
+  // The action; it must be allowed by the leg's role.
+  DtmfActionKind action = 2;
+}
+// Starts recording a leg with IE's key. Repeat-safe by recording_id. Until R9 only the null sink (local test setups; capability recording_null_sink; kek_id local-null-sink) takes it; otherwise invalid_state.
+message StartRecordingRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The leg (a UUID).
+  string leg_id = 3;
+  // The recording (a UUID IE made).
+  string recording_id = 4;
+  // The data key; never logged.
+  RecordingKey key = 5;
+}
+// RecordingStarted follows.
+message StartRecordingResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+}
+// IE's data key (IE's Q8), passed to parity-ms in memory only.
+message RecordingKey {
+  // SECRET: key. 32 bytes, dropped once parity-ms has it (best effort: a ByteString can't be zeroized).
+  bytes dek = 1;
+  // The key wrapped by kek_id; not secret.
+  bytes wrapped_dek = 2;
+  // The wrapping key's id.
+  string kek_id = 3;
+}
+// Repeat-safe by recording_id.
+message StopRecordingRequest {
+  // The owner, its fence and its acknowledgements.
+  SessionOwner owner = 1;
+  // Unique per command (<instance-id>:<uuid>); a retry reuses it.
+  string command_id = 2;
+  // The recording (a UUID IE made).
+  string recording_id = 3;
+}
+// RecordingStopped follows unless already gone.
+message StopRecordingResponse {
+  // True for a repeat: the first answer is returned.
+  bool existing = 1;
+  // True if it had already ended; still a success.
+  bool already_gone = 2;
+}
+
+// The parity-error trailer: the name lowercased, without the prefix.
+enum ErrorCode {
+  // Unknown.
+  ERROR_CODE_UNSPECIFIED = 0;
+  // ABORTED: a higher epoch, or etcd no longer names the caller. Stop acting.
+  ERROR_CODE_STALE_OWNER = 1;
+  // PERMISSION_DENIED: etcd contradicts the epoch, replica or bin. Alert.
+  ERROR_CODE_OWNER_UNVERIFIED = 2;
+  // UNAVAILABLE: a higher epoch needs etcd, which didn't answer.
+  ERROR_CODE_OWNER_CHECK_UNAVAILABLE = 3;
+  // INVALID_ARGUMENT: the tenant-id metadata and the body disagree.
+  ERROR_CODE_TENANT_MISMATCH = 4;
+  // INVALID_ARGUMENT: a field missing, malformed or out of range.
+  ERROR_CODE_INVALID_REQUEST = 5;
+  // PERMISSION_DENIED: the mTLS identity's bin isn't the request's or the zone's.
+  ERROR_CODE_IDENTITY_MISMATCH = 6;
+  // NOT_FOUND: no such session for this tenant on this node.
+  ERROR_CODE_SESSION_UNKNOWN = 7;
+  // NOT_FOUND: no such leg in the session.
+  ERROR_CODE_LEG_UNKNOWN = 8;
+  // ALREADY_EXISTS: the leg_id exists with other parameters.
+  ERROR_CODE_LEG_CONFLICT = 9;
+  // ALREADY_EXISTS: the command_id was used for another request.
+  ERROR_CODE_COMMAND_CONFLICT = 10;
+  // FAILED_PRECONDITION: the owner record names another media node.
+  ERROR_CODE_WRONG_NODE = 11;
+  // FAILED_PRECONDITION: not possible in the leg's or session's state.
+  ERROR_CODE_INVALID_STATE = 12;
+  // FAILED_PRECONDITION: the session ended; GetSession has its tombstone.
+  ERROR_CODE_SESSION_ENDED = 13;
+  // FAILED_PRECONDITION: the arrival isn't offered to the caller (any more).
+  ERROR_CODE_ARRIVAL_CLOSED = 14;
+  // FAILED_PRECONDITION: no such prompt for the tenant on this node, or it can't be played (unreadable, corrupt); only that Play fails.
+  ERROR_CODE_PROMPT_UNKNOWN = 15;
+  // RESOURCE_EXHAUSTED: no parity-ms legs or freeswitch sessions left.
+  ERROR_CODE_NO_CAPACITY = 16;
+  // UNAVAILABLE: no new sessions; existing ones are served.
+  ERROR_CODE_DRAINING = 17;
+  // UNAVAILABLE: TC is rebuilding after a start.
+  ERROR_CODE_REBUILDING = 18;
+  // UNAVAILABLE: ESL is down.
+  ERROR_CODE_FREESWITCH_UNAVAILABLE = 19;
+  // UNAVAILABLE: parity-ms is down.
+  ERROR_CODE_PARITY_MS_UNAVAILABLE = 20;
+  // ABORTED: a newer Watch stream of the same replica_id.
+  ERROR_CODE_STREAM_SUPERSEDED = 21;
+  // INTERNAL: a bug.
+  ERROR_CODE_INTERNAL = 22;
+  // DEADLINE_EXCEEDED: this attempt arrived after its parity-attempt-expires-ms (less TC's skew budget) and did nothing; retry with a fresh expiry and the same command_id (0.2.3).
+  ERROR_CODE_ATTEMPT_EXPIRED = 23;
+  // UNAVAILABLE: the session's queue is full; nothing was done; retry with the same command_id (0.2.3).
+  ERROR_CODE_SESSION_BUSY = 24;
+}

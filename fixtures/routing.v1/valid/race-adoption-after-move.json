@@ -1,0 +1,350 @@
+{
+  "description": "RE moved the entry by an overflow; the adopter's Reattach sees the move and its repeated Enqueue gets the moved entry",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.routing.v1",
+  "pins": [
+    "F9"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    },
+    "r2": {
+      "replica_id": "ie-bin-a-2",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales",
+        "max_wait_ms": "30000",
+        "max_wait_action": "OVERFLOW_ACTION_QUEUE",
+        "max_wait_queue_id": "sales-overflow"
+      },
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales-overflow"
+      }
+    ],
+    "agents": [],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "ms": "4000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819204",
+          "owner_epoch": "1052",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales-overflow"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800004000",
+        "ordering_at_ms": "1792800004000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000002",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales-overflow"
+            },
+            "first_queued_at_ms": "1792800004000",
+            "ordering_at_ms": "1792800004000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1
+          },
+          "existing": false
+        }
+      },
+      "note": "a caller already in sales-overflow"
+    },
+    {
+      "op": "advance",
+      "ms": "1000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "requirements": [
+          {
+            "skill_id": "sales-en",
+            "min_level": 2
+          }
+        ],
+        "priority": 0,
+        "first_queued_at_ms": "1792800005000",
+        "ordering_at_ms": "1792800005000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB",
+          "customer_key": "ck_3q2-xV9mZr8LbN0pQ7sT1w"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800005000",
+            "ordering_at_ms": "1792800005000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1,
+            "expected_wait_s": 40
+          },
+          "existing": false
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "ms": "30000",
+      "note": "sales' max wait (30 s): the entry moves to sales-overflow (L14)"
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "1",
+        "overflow": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042"
+          },
+          "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+          "action": "OVERFLOW_ACTION_QUEUE",
+          "queue_id": "sales-overflow"
+        }
+      }
+    },
+    {
+      "op": "inject",
+      "what": "stream_drop",
+      "args": {
+        "stream": "r1"
+      },
+      "note": "ie-bin-a-1 dies"
+    },
+    {
+      "op": "call",
+      "stream": "r2",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-2",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800035000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Reattach",
+      "message": "parity.routing.v1.ReattachRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1043",
+          "replica_id": "ie-bin-a-2",
+          "acked_delivery_seq": "0"
+        }
+      },
+      "expect": {
+        "message": "parity.routing.v1.ReattachResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales-overflow"
+            },
+            "first_queued_at_ms": "1792800005000",
+            "ordering_at_ms": "1792800005000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 2,
+            "expected_wait_s": 40
+          },
+          "reservations": [],
+          "last_delivery_seq": "1"
+        }
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r2",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "1",
+        "overflow": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1043"
+          },
+          "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+          "action": "OVERFLOW_ACTION_QUEUE",
+          "queue_id": "sales-overflow"
+        }
+      },
+      "note": "replayed to the adopter with the current fence (CR-054, 0.9.0)"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1043",
+          "replica_id": "ie-bin-a-2",
+          "acked_delivery_seq": "1"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "requirements": [
+          {
+            "skill_id": "sales-en",
+            "min_level": 2
+          }
+        ],
+        "priority": 0,
+        "first_queued_at_ms": "1792800005000",
+        "ordering_at_ms": "1792800005000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB",
+          "customer_key": "ck_3q2-xV9mZr8LbN0pQ7sT1w"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales-overflow"
+            },
+            "first_queued_at_ms": "1792800005000",
+            "ordering_at_ms": "1792800005000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 2,
+            "expected_wait_s": 40
+          },
+          "existing": true
+        }
+      },
+      "note": "the same enqueue_seq with the original target: not enqueue_conflict"
+    }
+  ]
+}

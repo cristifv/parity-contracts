@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "service": "parity-ms",
+  "description": "Starter catalogue for parity-ms (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-ms.v1.json; the service owns it from then on.",
+  "events": {
+    "leg.started": {
+      "description": "Media for a leg started (attrs.codec, attrs.mode).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id",
+        "node"
+      ],
+      "attrs": [
+        "codec",
+        "mode"
+      ]
+    },
+    "leg.stats": {
+      "description": "One summary per leg when it ends: packets, loss, jitter. Never per packet.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ],
+      "attrs": [
+        "packets_in",
+        "packets_out",
+        "loss_pct"
+      ]
+    },
+    "leg.media_timeout": {
+      "description": "No RTP for the leg's media timeout.",
+      "levels": [
+        "warn"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ]
+    },
+    "thread.overrun": {
+      "description": "A media thread overran its cycle.",
+      "levels": [
+        "warn"
+      ],
+      "attrs": [
+        "thread_name"
+      ],
+      "dedup": {
+        "window_ms": 1000,
+        "key": [
+          "attrs.thread_name"
+        ]
+      }
+    }
+  }
+}

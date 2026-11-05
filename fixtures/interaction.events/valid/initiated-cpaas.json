@@ -1,0 +1,30 @@
+{
+  "description": "voice-api's initiated: the outbound call is placed",
+  "kind": "kafka",
+  "writer_valid": true,
+  "violates": [],
+  "reader": "apply",
+  "record": {
+    "topic": "interaction.events",
+    "key": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+    "headers": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-7c40-7003-8000-000000000003",
+      "type": "initiated",
+      "interaction_id": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+      "tenant_id": "acme",
+      "seq": 2,
+      "owner_epoch": 1042,
+      "at_ms": 1792800002000,
+      "channel": "voice",
+      "direction": "outbound",
+      "cpaas": true
+    }
+  }
+}

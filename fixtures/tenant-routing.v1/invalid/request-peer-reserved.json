@@ -1,0 +1,23 @@
+{
+  "description": "A reserved peer command (built with the second zone): bad_request",
+  "kind": "routing_ops",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "tenant.routing.requests.eu1a",
+    "key": "cct-1:ping-0001",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "peer_report",
+      "id": "cct-1:ping-0001",
+      "reply_to": "replies.parity-cc-tools"
+    }
+  }
+}

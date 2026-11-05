@@ -1,0 +1,25 @@
+{
+  "description": "get_seat_usage: the day's maximum (FE-027)",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.parity-billing",
+    "key": "parity-billing-1:prov:0192f6a1-e000-7aaa-8bbb-00000000a001:get_provisioning",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "parity-billing-1:prov:0192f6a1-e000-7aaa-8bbb-00000000a001:get_provisioning",
+      "ok": true,
+      "result": {
+        "tenant_id": "acme",
+        "day": "2026-10-31",
+        "enabled_now": 2,
+        "max_enabled_in_day": 3
+      }
+    }
+  }
+}

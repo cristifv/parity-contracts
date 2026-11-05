@@ -1,0 +1,55 @@
+{
+  "description": "No tenant_id header on a tenant's event",
+  "kind": "routing_ops",
+  "writer_valid": false,
+  "violates": [
+    "missing_header"
+  ],
+  "reader": "reject",
+  "record": {
+    "topic": "tenant.routing.events.eu1a",
+    "key": "acme",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0193a1b2-c3d4-7e5f-ba6b-7c8d9e0f1a3a",
+      "type": "route.deleted",
+      "at_ms": 1793000000000,
+      "zone": "eu1a",
+      "tenant_id": "acme",
+      "route": {
+        "tenant_id": "acme",
+        "name": "Acme Ltd",
+        "tier": "small",
+        "parent": null,
+        "placement": {
+          "home_zone": "eu1a",
+          "failover_zone": "eu2a",
+          "zone": "eu1a",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "version": 7,
+        "revision": 1834,
+        "owner_zone": "eu1a",
+        "assignment": {
+          "unit": "bin-a",
+          "media_track": "blue",
+          "epoch": 7702
+        },
+        "unit": {
+          "role": "live",
+          "release": "1.8.3",
+          "ready": true,
+          "health": "ok"
+        },
+        "pin": null,
+        "active_saga": null
+      }
+    }
+  }
+}

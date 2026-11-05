@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "name": "redial-storm",
+  "description": "A 4x surge on sales for 20 minutes where 90 % of the callers who give up call again within 30 s (the catalogue: <= 50 %) (the forecaster's held-out OOD suite: never used in training)",
+  "seed": 7,
+  "duration_s": 14400,
+  "bin": "bin-a",
+  "tenants": [
+    {
+      "id": "acme",
+      "queues": [
+        {
+          "id": "sales",
+          "max_wait_s": 600,
+          "max_wait_action": {
+            "action": "disconnect"
+          },
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 204.0
+              },
+              {
+                "t_s": 3600,
+                "per_hour": 240.0
+              },
+              {
+                "t_s": 7200,
+                "per_hour": 259.2
+              },
+              {
+                "t_s": 10800,
+                "per_hour": 249.6
+              },
+              {
+                "t_s": 14400,
+                "per_hour": 228.0
+              }
+            ],
+            "spikes": [
+              {
+                "start_s": 9000,
+                "duration_s": 1200,
+                "multiplier": 4,
+                "ramp_s": 60
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "lognormal",
+            "mean_s": 180,
+            "cv": 0.8
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 120
+          },
+          "redial": {
+            "p": 0.9,
+            "mean_delay_s": 30
+          }
+        },
+        {
+          "id": "support",
+          "max_wait_s": 600,
+          "max_wait_action": {
+            "action": "disconnect"
+          },
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 102.0
+              },
+              {
+                "t_s": 3600,
+                "per_hour": 120.0
+              },
+              {
+                "t_s": 7200,
+                "per_hour": 129.6
+              },
+              {
+                "t_s": 10800,
+                "per_hour": 124.8
+              },
+              {
+                "t_s": 14400,
+                "per_hour": 114.0
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "lognormal",
+            "mean_s": 180,
+            "cv": 0.8
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 120
+          }
+        }
+      ],
+      "agents": [
+        {
+          "count": 11,
+          "id_prefix": "fc-sales-",
+          "queues": [
+            "sales"
+          ],
+          "skills": {
+            "en": 2
+          }
+        },
+        {
+          "count": 6,
+          "id_prefix": "fc-support-",
+          "queues": [
+            "support"
+          ],
+          "skills": {
+            "en": 2
+          }
+        },
+        {
+          "count": 7,
+          "id_prefix": "fc-flex-",
+          "queues": [
+            "sales",
+            "support"
+          ],
+          "skills": {
+            "en": 2
+          }
+        }
+      ]
+    }
+  ],
+  "expectations": {
+    "invariants": "all"
+  },
+  "forecast": {
+    "purpose": "ood",
+    "start_ms": 1772438400000,
+    "resolutions_s": [
+      10,
+      60,
+      900
+    ],
+    "history_days": 14,
+    "ood": {
+      "onset_s": 9000,
+      "end_s": 10200,
+      "features": [
+        {
+          "name": "redial_p",
+          "value": 0.9
+        }
+      ],
+      "expect": {
+        "max_fallback_entries": 3,
+        "recover": true,
+        "kpi_tolerance": 0.05,
+        "triggers": [
+          "realized_error",
+          "above_range",
+          "ratio"
+        ],
+        "detect_within_s": 180,
+        "recover_within_s": 1800
+      }
+    }
+  }
+}

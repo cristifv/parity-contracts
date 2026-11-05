@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/config-routing-pin/v1.json",
+  "title": "config.routing_pin: a supervisor's pin or exclusions for one agent (0.11.0)",
+  "description": "One document per (tenant, agent) on the compacted topic config.routing_pin, key {tenant_id}/{agent_id}; a Kafka tombstone unpins. Pins ignore dwell (a person decided), apply at the agent's next offer (never mid-call) and never leave a queue without a logged-in eligible agent (such a pin waits). A pin naming an agent or queue of another tenant, or a key naming another tenant, is refused and counted. Approvals of advise-mode recommendations become pins with until_ms.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "agent_id",
+    "version"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "queues"
+      ],
+      "properties": {
+        "queues": {
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "required": [
+        "exclusions"
+      ],
+      "properties": {
+        "exclusions": {
+          "minItems": 1
+        }
+      }
+    }
+  ],
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "agent_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "queues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "queue_id",
+          "tier"
+        ],
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+          },
+          "tier": {
+            "enum": [
+              "primary",
+              "secondary"
+            ]
+          }
+        }
+      },
+      "description": "The agent's active set while pinned (any number of queues and tiers); only queues it is a member of and eligible for count"
+    },
+    "exclusions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+      },
+      "description": "Queues the agent never takes calls from (escalated calls included)"
+    },
+    "until_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The pin ends then (epoch ms); 0 or absent: until a tombstone"
+    },
+    "reason_code": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "description": "set_failover_zone on ops",
+  "kind": "routing_ops",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.routing.ops.requests.eu1a",
+    "key": "acme",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "acme",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "set_failover_zone",
+      "id": "cct-1:set_failover_zone-0001",
+      "reply_to": "replies.parity-cc-tools",
+      "tenant_id": "acme",
+      "failover_zone": "eu2a",
+      "expected_version": 7,
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "actor": {
+        "sub": "5f0c2a9e-1b2c-4d3e-8f40-123456789abc",
+        "username": "jdoe",
+        "roles": [
+          "ops"
+        ]
+      },
+      "reason": "Move acme to the previous release for a support case",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c"
+    }
+  }
+}

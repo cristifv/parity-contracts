@@ -1,0 +1,122 @@
+{
+  "description": "parity-cc-routing (C++): a sampled agent decision at info, an optimizer decision, a rate-limited refusal.",
+  "kind": "log",
+  "writer_valid": true,
+  "violates": [],
+  "catalogues": [
+    "logging/examples/events.parity-cc-routing.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-cc-routing",
+      "version": "0.5.0",
+      "instance": "re-b0-1",
+      "seq": 101,
+      "event": "leader.elected",
+      "msg": "leading the bin",
+      "component": "ha/leader",
+      "bin": "b0",
+      "leader_epoch": 3
+    },
+    {
+      "ts": "2026-11-01T10:00:00.040Z",
+      "level": "info",
+      "service": "parity-cc-routing",
+      "version": "0.5.0",
+      "instance": "re-b0-1",
+      "seq": 102,
+      "event": "agent.selected",
+      "msg": "agent selected",
+      "component": "routing/match",
+      "queue_id": "sales",
+      "entry_id": "0192f3c1-6b00-7000-8000-00000000e001",
+      "agent_id": "agent-7",
+      "reservation_id": "0192f3c1-6c00-7000-8000-00000000a001",
+      "bin": "b0",
+      "leader_epoch": 3,
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "decision": {
+        "kind": "agent.select",
+        "sampled": true,
+        "total": 41,
+        "chosen": "agent-7",
+        "reason": "best_score",
+        "candidates": [
+          {
+            "id": "agent-7",
+            "score": 0.91,
+            "parts": {
+              "skill_match": 1.0,
+              "idle_s": 0.6
+            }
+          },
+          {
+            "id": "agent-3",
+            "score": 0.74,
+            "parts": {
+              "skill_match": 1.0,
+              "idle_s": 0.2
+            },
+            "reason": "lower_score"
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:30.040Z",
+      "level": "info",
+      "service": "parity-cc-routing",
+      "version": "0.5.0",
+      "instance": "re-b0-1",
+      "seq": 103,
+      "event": "weights.updated",
+      "msg": "queue weight moved",
+      "component": "optimizer/levers",
+      "queue_id": "sales",
+      "bin": "b0",
+      "leader_epoch": 3,
+      "decision": {
+        "kind": "weight.update",
+        "sampled": true,
+        "chosen": "sales",
+        "reason": "sla_pressure",
+        "candidates": [
+          {
+            "id": "sales",
+            "score": 1.3,
+            "parts": {
+              "sl_gap": 0.12,
+              "weight_before": 1.0,
+              "weight_after": 1.3
+            }
+          }
+        ]
+      },
+      "attrs": {
+        "weight": 1.3
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:30.240Z",
+      "level": "warn",
+      "service": "parity-cc-routing",
+      "version": "0.5.0",
+      "instance": "re-b0-1",
+      "seq": 104,
+      "event": "request.refused",
+      "msg": "request refused",
+      "component": "api/routing",
+      "op": "parity.routing.v1.RoutingService/Enqueue",
+      "repeat_count": 3,
+      "repeat_since": "2026-11-01T10:00:30.050Z",
+      "tenant_id": "acme",
+      "error": {
+        "code": "stale_owner"
+      }
+    }
+  ]
+}

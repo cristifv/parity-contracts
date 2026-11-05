@@ -1,0 +1,26 @@
+{
+  "description": "A parent: no placement",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.state",
+    "key": "tenant:initech",
+    "headers": {
+      "schema_version": "1",
+      "revision": "7",
+      "tenant_id": "initech"
+    },
+    "value": {
+      "schema_version": 1,
+      "kind": "tenant",
+      "tenant_id": "initech",
+      "name": "Initech Group",
+      "tier": "enterprise",
+      "parent": null,
+      "version": 1,
+      "placement": null,
+      "revision": 7
+    }
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "description": "A command_id with a space",
+  "kind": "grpc",
+  "writer_valid": false,
+  "package": "parity.telephony.v1",
+  "violates": [
+    "bad_command_id"
+  ],
+  "pins": [
+    "writer rules"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "incarnation": "0192f700-0000-7000-8000-000000000001",
+    "node_id": "media-1",
+    "version": "tc-test",
+    "bins": [
+      "bin-a",
+      "bin-b"
+    ],
+    "replicas": [
+      {
+        "bin": "bin-a",
+        "replica_id": "ie-bin-a-1"
+      },
+      {
+        "bin": "bin-a",
+        "replica_id": "ie-bin-a-2"
+      },
+      {
+        "bin": "bin-b",
+        "replica_id": "ie-bin-b-1"
+      }
+    ],
+    "owners": [],
+    "free_legs": 1000
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.telephony.v1.TelephonyService/Watch",
+      "message": "parity.telephony.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.telephony.v1.WatchResponse",
+        "body": {
+          "incarnation": "0192f700-0000-7000-8000-000000000001",
+          "node_id": "media-1",
+          "at_ms": "1792800000000",
+          "node_status": {
+            "free_legs": 1000,
+            "version": "tc-test",
+            "capabilities": [
+              "dtmf_actions",
+              "recording_null_sink"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.telephony.v1.TelephonyService/AnswerLeg",
+      "message": "parity.telephony.v1.AnswerLegRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1"
+        },
+        "command_id": "ie-bin-a-1 0001",
+        "leg_id": "0192f6a1-8000-7000-8000-000000000001"
+      },
+      "expect": {
+        "status": "INVALID_ARGUMENT",
+        "parity_error": "invalid_request"
+      }
+    }
+  ]
+}

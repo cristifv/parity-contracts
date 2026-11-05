@@ -1,0 +1,13 @@
+{
+  "description": "Not ready with a reason",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_gateway",
+  "frame": {
+    "v": 1,
+    "type": "set_state",
+    "id": "0192f6a1-c000-7aaa-8bbb-000000000001",
+    "state": "not_ready",
+    "reason_code": "break"
+  }
+}

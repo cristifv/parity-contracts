@@ -1,0 +1,278 @@
+{
+  "description": "Another interaction's reservation, another tenant's entry: refused, nothing touched",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.routing.v1",
+  "pins": [
+    "F1 L12"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme",
+      "globex"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      },
+      {
+        "tenant_id": "globex",
+        "queue_id": "sales"
+      }
+    ],
+    "agents": [
+      {
+        "tenant_id": "globex",
+        "agent_id": "agent-g1",
+        "agent_contact": "sip:agent-g1@globex.agents.example",
+        "queues": [
+          "sales"
+        ],
+        "ready_since_ms": "1792799980000"
+      }
+    ],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "globex",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "globex",
+          "interaction_id": "0192f6a3-5d6e-7f80-9112-233445566778",
+          "owner_epoch": "1072",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800000000",
+        "ordering_at_ms": "1792800000000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a3-9000-7aaa-8bbb-0000000000ff",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800000000",
+            "ordering_at_ms": "1792800000000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1
+          },
+          "existing": false
+        }
+      },
+      "note": "a globex caller"
+    },
+    {
+      "op": "inject",
+      "what": "agent_answers",
+      "args": {
+        "tenant_id": "globex",
+        "agent_id": "agent-g1",
+        "decision": "DECISION_ACCEPT",
+        "result": "accepted"
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "1",
+        "assigned": {
+          "target": {
+            "tenant_id": "globex",
+            "interaction_id": "0192f6a3-5d6e-7f80-9112-233445566778",
+            "owner_epoch": "1072"
+          },
+          "reservation_id": "0192f6a3-9100-7ccc-8ddd-0000000000ff",
+          "entry_id": "0192f6a3-9000-7aaa-8bbb-0000000000ff",
+          "agent_id": "agent-g1",
+          "agent_contact": "sip:agent-g1@globex.agents.example",
+          "deadline_ms": "1792800030000"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800000000",
+        "ordering_at_ms": "1792800000000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800000000",
+            "ordering_at_ms": "1792800000000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1
+          },
+          "existing": false
+        }
+      },
+      "note": "acme's own caller"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReportOutcome",
+      "message": "parity.routing.v1.ReportOutcomeRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "reservation_id": "0192f6a3-9100-7ccc-8ddd-0000000000ff",
+        "outcome": "OUTCOME_CONNECTED"
+      },
+      "expect": {
+        "status": "NOT_FOUND",
+        "parity_error": "reservation_unknown"
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Dequeue",
+      "message": "parity.routing.v1.DequeueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "entry_id": "0192f6a3-9000-7aaa-8bbb-0000000000ff",
+        "reason": "DEQUEUE_REASON_ABANDONED"
+      },
+      "expect": {
+        "status": "NOT_FOUND",
+        "parity_error": "entry_unknown"
+      },
+      "note": "the entry belongs to globex interaction 0192f6a3-5d6e-7f80-9112-233445566778"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReportOutcome",
+      "message": "parity.routing.v1.ReportOutcomeRequest",
+      "metadata": {
+        "tenant-id": "globex",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "globex",
+          "interaction_id": "0192f6a3-5d6e-7f80-9112-233445566778",
+          "owner_epoch": "1072",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "1"
+        },
+        "reservation_id": "0192f6a3-9100-7ccc-8ddd-0000000000ff",
+        "outcome": "OUTCOME_CONNECTED"
+      },
+      "expect": {
+        "message": "parity.routing.v1.ReportOutcomeResponse",
+        "body": {
+          "existing": false,
+          "recorded": "OUTCOME_CONNECTED"
+        }
+      },
+      "note": "nothing was touched: globex's reservation is still ASSIGNED"
+    }
+  ]
+}

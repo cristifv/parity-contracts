@@ -1,0 +1,172 @@
+{
+  "description": "Not ready asked on a call is pending; wrap-up ends into it",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.agents.v1",
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "offer_timeout_ms": "15000",
+    "grace_ms": "60000",
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "state": "ON_CALL",
+        "reservation": {
+          "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203"
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/Watch",
+      "message": "parity.agents.v1.WatchRequest",
+      "body": {
+        "replica_id": "gw-bin-a-1",
+        "bin": "bin-a"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "expect": {
+        "message": "parity.agents.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/AttachAgent",
+      "message": "parity.agents.v1.AttachAgentRequest",
+      "body": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "replica_id": "gw-bin-a-1",
+        "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.AttachAgentResponse",
+        "body": {
+          "attach_generation": "1",
+          "existing": false,
+          "agent": {
+            "state": "AGENT_STATE_ON_CALL",
+            "since_ms": "1792800000000",
+            "state_version": "5",
+            "mode": "MODE_INBOUND"
+          },
+          "leader_epoch": "7",
+          "reservations": [
+            {
+              "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+              "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/SetState",
+      "message": "parity.agents.v1.SetStateRequest",
+      "body": {
+        "session": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+          "attach_generation": "1"
+        },
+        "command_id": "gw:xdhlVRwIcXLlDGDxs1NUz4Hy-k9P1MeITsrHAFvRuZ8",
+        "target": "TARGET_STATE_NOT_READY",
+        "reason_code": "break"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.SetStateResponse",
+        "body": {
+          "agent": {
+            "state": "AGENT_STATE_ON_CALL",
+            "since_ms": "1792800000000",
+            "state_version": "5",
+            "mode": "MODE_INBOUND",
+            "pending_target": "TARGET_STATE_NOT_READY",
+            "pending_reason_code": "break"
+          }
+        }
+      }
+    },
+    {
+      "op": "inject",
+      "what": "call_ended",
+      "args": {
+        "tenant_id": "acme",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001"
+      }
+    },
+    {
+      "op": "deliver",
+      "message": "parity.agents.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "attach_generation": "1",
+        "delivery_seq": "1",
+        "wrap_up_started": {
+          "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "ends_at_ms": "1792800060000"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/EndWrapUp",
+      "message": "parity.agents.v1.EndWrapUpRequest",
+      "body": {
+        "session": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+          "attach_generation": "1"
+        },
+        "command_id": "gw:ysOWr9dStFccosTkGBlfCuIMAi1tcEhEktI-SrKnSOs",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "disposition_code": "sale"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.EndWrapUpResponse",
+        "body": {
+          "agent": {
+            "state": "AGENT_STATE_NOT_READY",
+            "since_ms": "1792800000000",
+            "state_version": "7",
+            "mode": "MODE_INBOUND",
+            "reason_code": "break"
+          }
+        }
+      }
+    }
+  ]
+}

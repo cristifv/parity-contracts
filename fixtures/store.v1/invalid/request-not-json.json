@@ -1,0 +1,16 @@
+{
+  "description": "A body that isn't JSON: never answered",
+  "kind": "store",
+  "writer_valid": false,
+  "violates": [
+    "schema",
+    "bad_id",
+    "bad_reply_to"
+  ],
+  "reader": "dlt",
+  "record": {
+    "topic": "tenant.store.requests",
+    "key": "acme",
+    "headers": {}
+  }
+}

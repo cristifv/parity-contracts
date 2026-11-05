@@ -1,0 +1,358 @@
+{
+  "description": "A decision of 16 candidates with every score part: over 4096 bytes.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "decision_too_large"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-cc-routing.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "debug",
+      "service": "parity-cc-routing",
+      "version": "0.5.0",
+      "instance": "re-b0-1",
+      "seq": 101,
+      "event": "agent.selected",
+      "msg": "agent selected",
+      "queue_id": "sales",
+      "entry_id": "0192f3c1-6b00-7000-8000-00000000e001",
+      "agent_id": "agent-0",
+      "reservation_id": "0192f3c1-6c00-7000-8000-00000000a001",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "decision": {
+        "kind": "agent.select",
+        "total": 16,
+        "chosen": "agent-0",
+        "reason": "best_score",
+        "candidates": [
+          {
+            "id": "agent-0",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-1",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-2",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-3",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-4",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-5",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-6",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-7",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-8",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-9",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-10",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-11",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-12",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-13",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-14",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          },
+          {
+            "id": "agent-15",
+            "score": 0.5,
+            "eligible": true,
+            "reason": "lower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_onelower_score_than_the_chosen_one",
+            "parts": {
+              "term_0_with_a_long_descriptive_name": 0.1,
+              "term_1_with_a_long_descriptive_name": 0.1,
+              "term_2_with_a_long_descriptive_name": 0.1,
+              "term_3_with_a_long_descriptive_name": 0.1,
+              "term_4_with_a_long_descriptive_name": 0.1,
+              "term_5_with_a_long_descriptive_name": 0.1,
+              "term_6_with_a_long_descriptive_name": 0.1,
+              "term_7_with_a_long_descriptive_name": 0.1,
+              "term_8_with_a_long_descriptive_name": 0.1,
+              "term_9_with_a_long_descriptive_name": 0.1,
+              "term_10_with_a_long_descriptive_name": 0.1,
+              "term_11_with_a_long_descriptive_name": 0.1
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

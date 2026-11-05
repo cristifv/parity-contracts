@@ -1,0 +1,94 @@
+{
+  "description": "A blocked destination, an unknown interaction, a tenant mismatch",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.interaction.v1",
+  "given": {
+    "calls": [
+      {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "agent_id": "agent-7f3a",
+        "customer_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+        "agent_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+        "managed": true,
+        "owner_epoch": "1042",
+        "seq": "12"
+      }
+    ],
+    "blocked_numbers": [
+      "+447700900999"
+    ],
+    "owner_moving": false
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:3WNx9ij_PHPgIWAulJF32ecicLxXHYRcTRo0f5Y2AI4",
+        "blind_transfer": {
+          "target": {
+            "number": "+447700900999"
+          }
+        }
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "status": "FAILED_PRECONDITION",
+        "parity_error": "destination_not_allowed"
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-000000000000",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:VPEVjxkXzFKp1_0ZP28G-t82653kJkq-e6U-zSsSA0c",
+        "hangup": {}
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "status": "NOT_FOUND",
+        "parity_error": "not_found"
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:Rp1Kl-PhXowXTIyrg5m_WqA8JjBODaZ7GL6AzKy8kJE",
+        "hangup": {}
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "globex"
+      },
+      "expect": {
+        "status": "INVALID_ARGUMENT",
+        "parity_error": "tenant_mismatch"
+      }
+    }
+  ]
+}

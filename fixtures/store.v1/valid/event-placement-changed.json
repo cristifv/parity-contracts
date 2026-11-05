@@ -1,0 +1,43 @@
+{
+  "description": "A bin move",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.events",
+    "key": "acme",
+    "headers": {
+      "tenant_id": "acme",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-e000-7aaa-8bbb-000000000001",
+      "type": "placement.changed",
+      "at_ms": 1792800000000,
+      "tenant_id": "acme",
+      "revision": 7,
+      "placement": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-b",
+        "media_track": "blue",
+        "version": 2,
+        "updated_at_ms": 1792800000000
+      },
+      "previous": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-a",
+        "media_track": "blue",
+        "version": 1,
+        "updated_at_ms": 1792800000000
+      }
+    }
+  }
+}

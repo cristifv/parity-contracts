@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/store-events/v1.json",
+  "title": "tenant.store.events, schema_version 1",
+  "description": "Every committed change of the maps, in commit order per tenant. Keyed by tenant_id, headers tenant_id, schema_version, traceparent. Published through parity-store's outbox: at least once; drop an event_id or a revision already applied. Numbers here are tenants' numbers (x-pii: phone): operators and admin-console only.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "type",
+    "at_ms",
+    "tenant_id",
+    "revision"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "type": {
+      "type": "string"
+    },
+    "at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The store-wide change counter: one value per committed change, in commit order"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/type_tenant_changed"
+    },
+    {
+      "$ref": "#/$defs/type_tenant_deleted"
+    },
+    {
+      "$ref": "#/$defs/type_placement_changed"
+    },
+    {
+      "$ref": "#/$defs/type_placement_deleted"
+    },
+    {
+      "$ref": "#/$defs/type_number_added"
+    },
+    {
+      "$ref": "#/$defs/type_number_removed"
+    },
+    {
+      "$ref": "#/$defs/type_sip_domain_added"
+    },
+    {
+      "$ref": "#/$defs/type_sip_domain_removed"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "tenant_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tenant_id",
+        "name",
+        "tier",
+        "parent",
+        "version",
+        "updated_at_ms"
+      ],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\u0000-\u001f]+$"
+        },
+        "tier": {
+          "enum": [
+            "small",
+            "mid",
+            "enterprise"
+          ]
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "home_zone",
+        "failover_zone",
+        "zone",
+        "cell",
+        "deployment_unit",
+        "media_track",
+        "version",
+        "updated_at_ms"
+      ],
+      "properties": {
+        "home_zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "failover_zone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "cell": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "deployment_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "media_track": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "type_tenant_changed": {
+      "type": "object",
+      "required": [
+        "type",
+        "tenant"
+      ],
+      "properties": {
+        "type": {
+          "const": "tenant.changed"
+        },
+        "tenant": {
+          "$ref": "#/$defs/tenant_record"
+        },
+        "previous": {
+          "$ref": "#/$defs/tenant_record"
+        }
+      }
+    },
+    "type_tenant_deleted": {
+      "type": "object",
+      "required": [
+        "type",
+        "tenant"
+      ],
+      "properties": {
+        "type": {
+          "const": "tenant.deleted"
+        },
+        "tenant": {
+          "$ref": "#/$defs/tenant_record"
+        }
+      }
+    },
+    "type_placement_changed": {
+      "type": "object",
+      "required": [
+        "type",
+        "placement"
+      ],
+      "properties": {
+        "type": {
+          "const": "placement.changed"
+        },
+        "placement": {
+          "$ref": "#/$defs/placement"
+        },
+        "previous": {
+          "$ref": "#/$defs/placement"
+        }
+      }
+    },
+    "type_placement_deleted": {
+      "type": "object",
+      "required": [
+        "type",
+        "placement"
+      ],
+      "properties": {
+        "type": {
+          "const": "placement.deleted"
+        },
+        "placement": {
+          "$ref": "#/$defs/placement"
+        }
+      }
+    },
+    "type_number_added": {
+      "type": "object",
+      "required": [
+        "type",
+        "number"
+      ],
+      "properties": {
+        "type": {
+          "const": "number.added"
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-pii": "phone"
+        }
+      }
+    },
+    "type_number_removed": {
+      "type": "object",
+      "required": [
+        "type",
+        "number"
+      ],
+      "properties": {
+        "type": {
+          "const": "number.removed"
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-pii": "phone"
+        }
+      }
+    },
+    "type_sip_domain_added": {
+      "type": "object",
+      "required": [
+        "type",
+        "domain"
+      ],
+      "properties": {
+        "type": {
+          "const": "sip_domain.added"
+        },
+        "domain": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      }
+    },
+    "type_sip_domain_removed": {
+      "type": "object",
+      "required": [
+        "type",
+        "domain"
+      ],
+      "properties": {
+        "type": {
+          "const": "sip_domain.removed"
+        },
+        "domain": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      }
+    }
+  }
+}

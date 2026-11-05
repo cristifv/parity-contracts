@@ -1,0 +1,33 @@
+{
+  "description": "Two records of one process with the same seq.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "seq_repeat"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-gateway.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 101,
+      "event": "service.starting",
+      "msg": "starting"
+    },
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 101,
+      "event": "service.ready",
+      "msg": "ready"
+    }
+  ]
+}

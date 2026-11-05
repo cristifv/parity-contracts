@@ -1,0 +1,83 @@
+{
+  "description": "The tenant-id metadata names another tenant than the owner's",
+  "kind": "grpc",
+  "writer_valid": false,
+  "package": "parity.routing.v1",
+  "violates": [
+    "tenant_mismatch"
+  ],
+  "pins": [
+    "G5",
+    "routing writer rules"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      }
+    ],
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-a1",
+        "agent_contact": "sip:agent-a1@acme.agents.example",
+        "queues": [
+          "sales"
+        ],
+        "ready_since_ms": "1792799980000"
+      }
+    ],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "globex",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800000000",
+        "ordering_at_ms": "1792800000000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "status": "INVALID_ARGUMENT",
+        "parity_error": "tenant_mismatch"
+      }
+    }
+  ]
+}

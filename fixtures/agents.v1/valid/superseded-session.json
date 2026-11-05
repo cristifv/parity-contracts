@@ -1,0 +1,199 @@
+{
+  "description": "A second tab attaches: the first is detached and fenced",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.agents.v1",
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "offer_timeout_ms": "15000",
+    "grace_ms": "60000",
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "state": "NOT_READY",
+        "reason_code": "login"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/Watch",
+      "message": "parity.agents.v1.WatchRequest",
+      "body": {
+        "replica_id": "gw-bin-a-1",
+        "bin": "bin-a"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "expect": {
+        "message": "parity.agents.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/AttachAgent",
+      "message": "parity.agents.v1.AttachAgentRequest",
+      "body": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "replica_id": "gw-bin-a-1",
+        "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.AttachAgentResponse",
+        "body": {
+          "attach_generation": "1",
+          "existing": false,
+          "agent": {
+            "state": "AGENT_STATE_NOT_READY",
+            "since_ms": "1792800000000",
+            "state_version": "1",
+            "mode": "MODE_INBOUND",
+            "reason_code": "login"
+          },
+          "leader_epoch": "7"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/AttachAgent",
+      "message": "parity.agents.v1.AttachAgentRequest",
+      "body": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "replica_id": "gw-bin-a-1",
+        "session_id": "0192f6a1-5000-7aaa-8bbb-000000000002",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.AttachAgentResponse",
+        "body": {
+          "attach_generation": "2",
+          "existing": false,
+          "agent": {
+            "state": "AGENT_STATE_NOT_READY",
+            "since_ms": "1792800000000",
+            "state_version": "1",
+            "mode": "MODE_INBOUND",
+            "reason_code": "login"
+          },
+          "leader_epoch": "7"
+        }
+      }
+    },
+    {
+      "op": "deliver",
+      "message": "parity.agents.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "attach_generation": "1",
+        "delivery_seq": "1",
+        "detached": {
+          "reason": "DETACHED_REASON_SUPERSEDED"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/SetState",
+      "message": "parity.agents.v1.SetStateRequest",
+      "body": {
+        "session": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+          "attach_generation": "1"
+        },
+        "command_id": "gw:AK3zErUCWEBg2P5L0MtfD-rZpPrF2cbNtuVPICQdSZ8",
+        "target": "TARGET_STATE_READY"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "status": "ABORTED",
+        "parity_error": "session_superseded"
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/DetachAgent",
+      "message": "parity.agents.v1.DetachAgentRequest",
+      "body": {
+        "session": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+          "attach_generation": "1"
+        },
+        "reason": "DETACH_REASON_SOCKET_CLOSED"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.DetachAgentResponse",
+        "body": {
+          "applied": false
+        }
+      },
+      "note": "the old replica's late detach changes nothing"
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/AttachAgent",
+      "message": "parity.agents.v1.AttachAgentRequest",
+      "body": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "replica_id": "gw-bin-a-1",
+        "session_id": "0192f6a1-5000-7aaa-8bbb-000000000002",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.AttachAgentResponse",
+        "body": {
+          "attach_generation": "2",
+          "existing": true,
+          "agent": {
+            "state": "AGENT_STATE_NOT_READY",
+            "since_ms": "1792800000000",
+            "state_version": "1",
+            "mode": "MODE_INBOUND",
+            "reason_code": "login"
+          },
+          "leader_epoch": "7"
+        }
+      }
+    }
+  ]
+}

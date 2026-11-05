@@ -1,0 +1,797 @@
+// interaction-engine <-> routing-engine (parity-poc).
+//
+// The rules that go with these messages (the entry and reservation lifecycle, Watch
+// delivery, recovery after an adoption, resent callbacks, fencing, error codes) are in
+// CONVENTIONS.md and in ADR 0001 §4.3 of parity-interaction-engine. Keep this file easy for
+// C++ under Bazel: proto3 only, no optional, extensions, Any, maps, custom options or
+// well-known-type imports.
+syntax = "proto3";
+
+package parity.routing.v1;
+
+option java_multiple_files = true;
+option java_package = "parity.contracts.routing.v1";
+
+// Served by the bin's routing-engine leader. A standby answers UNAVAILABLE with the
+// trailers parity-error: not_leader and parity-leader: <host:port>.
+service RoutingService {
+  // Creates the interaction's queue entry, or returns the existing one for a repeat.
+  rpc Enqueue(EnqueueRequest) returns (EnqueueResponse);
+  // Takes the entry out of its queue. Idempotent.
+  rpc Dequeue(DequeueRequest) returns (DequeueResponse);
+  // Turns a queued interaction into a scheduled callback.
+  rpc ConvertToCallback(ConvertToCallbackRequest) returns (ConvertToCallbackResponse);
+  // Creates a voicemail task for a queue.
+  rpc CreateVoicemailTask(CreateVoicemailTaskRequest) returns (CreateVoicemailTaskResponse);
+  // Reports how an assignment (or a RunCallback) went. The first outcome wins.
+  rpc ReportOutcome(ReportOutcomeRequest) returns (ReportOutcomeResponse);
+  // Tells RE an agent's part of the call ended; RE starts the agent's wrap-up.
+  rpc CallEnded(CallEndedRequest) returns (CallEndedResponse);
+  // A new owner takes over an interaction: raises the fence and rebinds its Watch events.
+  rpc Reattach(ReattachRequest) returns (ReattachResponse);
+  // Acknowledges Watch messages in a batch, when IE has no other RPC to send for them.
+  rpc Acknowledge(AcknowledgeRequest) returns (AcknowledgeResponse);
+  // RE's messages for the interactions bound to one IE replica. The latest stream of a
+  // replica_id wins.
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
+  // Campaign lending (0.14.0; IE step 13a): lends agents to an outbound campaign. RE switches
+  // each one's mode when it is idle, or once its wrap-up ends (a pending switch). The campaign's
+  // leader calls it; a new leader calls it with no agents to take the campaign over.
+  rpc LendAgents(LendAgentsRequest) returns (LendAgentsResponse);
+  // Gives lent agents back to inbound routing: at once when idle, else once the campaign call's
+  // wrap-up ends. No dwell is owed.
+  rpc ReturnAgents(ReturnAgentsRequest) returns (ReturnAgentsResponse);
+  // The campaign leader reserves an idle lent agent for one campaign call, before dialing it. The
+  // reservation then runs as an inbound one does: ReportOutcome, CallEnded, WrapUpEnded.
+  rpc ReserveAgent(ReserveAgentRequest) returns (ReserveAgentResponse);
+}
+
+// Who asks about one interaction, its fence, and what it has received. Field 1 of every
+// per-interaction request.
+message InteractionOwner {
+  // The tenant (a DNS label). Must equal the tenant-id metadata where that is sent.
+  string tenant_id = 1;
+  // The interaction's id (a UUID).
+  string interaction_id = 2;
+  // The fencing token: the etcd create revision of ie/owner/{interaction_id}. At least 1.
+  uint64 owner_epoch = 3;
+  // The IE replica whose Watch stream receives this interaction's messages.
+  string replica_id = 4;
+  // The highest Watch delivery_seq IE has processed for this interaction; 0 for none.
+  uint64 acked_delivery_seq = 5;
+}
+
+// The interaction's channel.
+enum Channel {
+  // Unknown; readers treat it as unknown.
+  CHANNEL_UNSPECIFIED = 0;
+  // A voice call.
+  CHANNEL_VOICE = 1;
+}
+
+// A skill the agent must have, at a minimum level.
+message Requirement {
+  // The skill's id.
+  string skill_id = 1;
+  // The minimum level, 1 to 5; 0 means any level.
+  uint32 min_level = 2;
+}
+
+// What the interaction is offered to. Queue-neutral, so a queueless RE keeps this shape.
+message Target {
+  // Exactly one target.
+  oneof kind {
+    // A queue.
+    string queue_id = 1;
+    // One agent: a direct offer or a transfer to that agent.
+    string agent_id = 2;
+    // A consult asked for by a connected agent.
+    ConsultTarget consult = 3;
+  }
+}
+
+// A consult from a connected agent to a queue or another agent.
+message ConsultTarget {
+  // The connected agent who asked for the consult.
+  string from_agent_id = 1;
+  // Who is consulted.
+  oneof to {
+    // A queue.
+    string queue_id = 2;
+    // Another agent.
+    string agent_id = 3;
+  }
+}
+
+// Why IE enqueues, and so whether ordering_at_ms restarts.
+enum EnqueueReason {
+  // Unknown; RE treats it as ENQUEUE_REASON_NEW.
+  ENQUEUE_REASON_UNSPECIFIED = 0;
+  // The first queue of the interaction: first_queued_at_ms = ordering_at_ms = now.
+  ENQUEUE_REASON_NEW = 1;
+  // An agent transferred the connected call: ordering_at_ms restarts.
+  ENQUEUE_REASON_TRANSFER = 2;
+  // A flow step after an overflow: ordering_at_ms is kept.
+  ENQUEUE_REASON_OVERFLOW = 3;
+  // The agent's media dropped: ordering_at_ms is kept.
+  ENQUEUE_REASON_AGENT_LOST = 4;
+  // A consult entry: ordering_at_ms restarts.
+  ENQUEUE_REASON_CONSULT = 5;
+}
+
+// Where the entry goes in its queue.
+enum Placement {
+  // Treated as PLACEMENT_BY_ORDERING_TIME.
+  PLACEMENT_UNSPECIFIED = 0;
+  // By priority, then ordering_at_ms.
+  PLACEMENT_BY_ORDERING_TIME = 1;
+  // Next to be offered (the agent was lost).
+  PLACEMENT_HEAD = 2;
+}
+
+// Routing context. Never a phone number.
+message EnqueueContext {
+  // The caller's language, BCP 47.
+  string language = 1;
+  // The customer's pseudonym.
+  string customer_key = 2;
+}
+
+// Asks RE to queue the interaction.
+message EnqueueRequest {
+  // The owner and its fence.
+  InteractionOwner owner = 1;
+  // At least 1 per interaction, plus 1 for each new entry; a retry or replay reuses it.
+  uint32 enqueue_seq = 2;
+  // What to offer the interaction to.
+  Target target = 3;
+  // The skills the agent needs.
+  repeated Requirement requirements = 4;
+  // 1 to 100, higher first; 0 means the queue's default.
+  uint32 priority = 5;
+  // When the caller first joined any queue, epoch ms; never changes. For reports and SLAs.
+  int64 first_queued_at_ms = 6;
+  // The time that orders the entry with priority, epoch ms; restarts only per EnqueueReason.
+  int64 ordering_at_ms = 7;
+  // The channel.
+  Channel channel = 8;
+  // Routing context.
+  EnqueueContext context = 9;
+  // Why IE enqueues.
+  EnqueueReason reason = 10;
+  // Where the entry goes.
+  Placement placement = 11;
+  // The caller's class (0.12.0, additive): VIP callers go before normal callers of the queue at equal
+  // escalation status; escalation stays above it, so normal callers never starve. Unset: normal.
+  CallerClass caller_class = 12;
+}
+
+// A caller's class for routing (0.12.0; parity-cc-routing phase 5).
+enum CallerClass {
+  // Not set: a normal caller (an IE before 0.12.0).
+  CALLER_CLASS_UNSPECIFIED = 0;
+  // A normal caller.
+  CALLER_CLASS_NORMAL = 1;
+  // A VIP caller: its own service-level threshold and importance (config.routing), offered before
+  // normal callers at equal escalation status, optionally to VIP-eligible agents kept for it.
+  CALLER_CLASS_VIP = 2;
+}
+
+// A queue entry's state.
+enum EntryState {
+  // Unknown.
+  ENTRY_STATE_UNSPECIFIED = 0;
+  // Offerable.
+  ENTRY_STATE_WAITING = 1;
+  // An agent accepted; offered to no one else until CONNECTED or the reservation ends.
+  ENTRY_STATE_RESERVED = 2;
+  // An Overflow was delivered; offered to no one, kept until Dequeue(OVERFLOW).
+  ENTRY_STATE_OVERFLOWED = 3;
+}
+
+// How RE produced expected_wait_s (0.11.0, CR-096).
+enum ExpectedWaitQuality {
+  // Not set: an RE before 0.11.0 (treat as HEURISTIC).
+  EXPECTED_WAIT_QUALITY_UNSPECIFIED = 0;
+  // A simple estimate: position x handle time / eligible agents logged in.
+  EXPECTED_WAIT_QUALITY_HEURISTIC = 1;
+  // RE's queueing model, inside its validated range.
+  EXPECTED_WAIT_QUALITY_MODEL = 2;
+  // RE's queueing model outside its validated range: a rough figure.
+  EXPECTED_WAIT_QUALITY_APPROX = 3;
+  // No useful estimate (no eligible agent, or the queue can't keep up): expected_wait_s is a lower
+  // bound (the time to the queue's max wait), never 0.
+  EXPECTED_WAIT_QUALITY_LONG = 4;
+}
+
+// A queue entry as RE holds it.
+message QueueEntry {
+  // The entry's id (a UUID).
+  string entry_id = 1;
+  // The enqueue_seq that created it.
+  uint32 enqueue_seq = 2;
+  // Its target; after an overflow move, the new queue.
+  Target target = 3;
+  // As in EnqueueRequest.
+  int64 first_queued_at_ms = 4;
+  // As in EnqueueRequest.
+  int64 ordering_at_ms = 5;
+  // Its state.
+  EntryState state = 6;
+  // Its position; 1 is next.
+  uint32 position = 7;
+  // The expected wait, in seconds.
+  uint32 expected_wait_s = 8;
+  // How expected_wait_s was made (0.11.0); UNSPECIFIED once RESERVED or OVERFLOWED.
+  ExpectedWaitQuality expected_wait_quality = 9;
+}
+
+// The entry created, or the existing one for a repeat.
+message EnqueueResponse {
+  // The entry.
+  QueueEntry entry = 1;
+  // True for a repeat: the entry made first, wherever RE has moved it since.
+  bool existing = 2;
+}
+
+// Why the entry leaves its queue.
+enum DequeueReason {
+  // Unknown.
+  DEQUEUE_REASON_UNSPECIFIED = 0;
+  // The caller hung up.
+  DEQUEUE_REASON_ABANDONED = 1;
+  // Transferred elsewhere.
+  DEQUEUE_REASON_TRANSFERRED = 2;
+  // Turned into a callback.
+  DEQUEUE_REASON_CALLBACK = 3;
+  // Sent to voicemail.
+  DEQUEUE_REASON_VOICEMAIL = 4;
+  // The interaction ended.
+  DEQUEUE_REASON_ENDED = 5;
+  // A consult was canceled.
+  DEQUEUE_REASON_CONSULT_CANCELED = 6;
+  // IE checkpointed a VOICEMAIL, DISCONNECT or FLOW_STEP overflow and took it over.
+  DEQUEUE_REASON_OVERFLOW = 7;
+  // The interaction left this bin (a tenant handover, or a call sent to its right bin).
+  DEQUEUE_REASON_MOVED = 8;
+}
+
+// Takes an entry out of its queue.
+message DequeueRequest {
+  // The owner and its fence.
+  InteractionOwner owner = 1;
+  // The entry.
+  string entry_id = 2;
+  // Why.
+  DequeueReason reason = 3;
+}
+
+// The result of a Dequeue.
+message DequeueResponse {
+  // True when the entry had already left; still a success.
+  bool already_gone = 1;
+}
+
+// Turns the queued interaction into a callback.
+message ConvertToCallbackRequest {
+  // The owner and its fence.
+  InteractionOwner owner = 1;
+  // The entry.
+  string entry_id = 2;
+  // PII: phone. The E.164 number to call back; RE stores it for RunCallback.
+  string callback_number = 3;
+  // Offer the callback when the entry would have been offered.
+  bool keep_position = 4;
+}
+
+// The callback created, or the existing one.
+message ConvertToCallbackResponse {
+  // The callback's id (a UUID).
+  string callback_id = 1;
+  // True for a repeat.
+  bool existing = 2;
+}
+
+// Creates a voicemail task.
+message CreateVoicemailTaskRequest {
+  // The owner and its fence.
+  InteractionOwner owner = 1;
+  // The queue that gets the task.
+  string queue_id = 2;
+  // The recording's id (a UUID).
+  string recording_id = 3;
+  // When it was recorded, epoch ms.
+  int64 recorded_at_ms = 4;
+  // Its length, in seconds.
+  uint32 duration_s = 5;
+}
+
+// The task created, or the existing one.
+message CreateVoicemailTaskResponse {
+  // The task's id (a UUID).
+  string task_id = 1;
+  // True for a repeat.
+  bool existing = 2;
+}
+
+// How an assignment went.
+enum Outcome {
+  // Unknown.
+  OUTCOME_UNSPECIFIED = 0;
+  // The agent's leg answered and joined the room.
+  OUTCOME_CONNECTED = 1;
+  // Not answered in time: the entry goes back at its ordering time; missed-offer rule.
+  OUTCOME_AGENT_NO_ANSWER = 2;
+  // The agent's leg failed: as above, without a penalty for the agent.
+  OUTCOME_AGENT_LEG_FAILED = 3;
+  // The caller left: the entry and the reservation are removed, the agent freed.
+  OUTCOME_CALLER_GONE = 4;
+  // IE already has an agent for this interaction: RE frees this one.
+  OUTCOME_ALREADY_ASSIGNED = 5;
+  // RunCallback only: the customer didn't answer; RE reschedules per the queue's policy.
+  OUTCOME_CUSTOMER_NO_ANSWER = 6;
+  // Recorded by RE only: no outcome by deadline_ms plus the grace.
+  OUTCOME_EXPIRED = 7;
+  // Recorded by RE only: RE revoked the reservation.
+  OUTCOME_REVOKED = 8;
+}
+
+// Reports an assignment's outcome.
+message ReportOutcomeRequest {
+  // The owner and its fence.
+  InteractionOwner owner = 1;
+  // The reservation.
+  string reservation_id = 2;
+  // The outcome; IE sends 1 to 6 only.
+  Outcome outcome = 3;
+  // Why, without personal data: owner_changed, timeout, rejected, media_failed, sip_<code>.
+  string detail = 4;
+}
+
+// The outcome RE recorded.
+message ReportOutcomeResponse {
+  // True for a repeat.
+  bool existing = 1;
+  // The first outcome recorded; EXPIRED or REVOKED after a race.
+  Outcome recorded = 2;
+}
+
+// An agent's part of the call ended.
+message CallEndedRequest {
+  // The owner and its fence.
+  InteractionOwner owner = 1;
+  // The agent.
+  string agent_id = 2;
+  // The reservation.
+  string reservation_id = 3;
+  // When it ended, epoch ms.
+  int64 ended_at_ms = 4;
+}
+
+// The result of a CallEnded.
+message CallEndedResponse {
+  // True for a repeat.
+  bool existing = 1;
+}
+
+// A new owner takes over the interaction.
+message ReattachRequest {
+  // The new owner: a higher owner_epoch and its replica_id.
+  InteractionOwner owner = 1;
+}
+
+// A reservation's state.
+enum ReservationState {
+  // Unknown.
+  RESERVATION_STATE_UNSPECIFIED = 0;
+  // Accepted by the agent; the leg isn't connected yet.
+  RESERVATION_STATE_ASSIGNED = 1;
+  // Connected.
+  RESERVATION_STATE_CONNECTED = 2;
+}
+
+// A live reservation.
+message Reservation {
+  // The reservation's id (a UUID).
+  string reservation_id = 1;
+  // The agent.
+  string agent_id = 2;
+  // The agent softphone's SIP URI.
+  string agent_contact = 3;
+  // By when IE must report an outcome, epoch ms (ASSIGNED only).
+  int64 deadline_ms = 4;
+  // Its state.
+  ReservationState state = 5;
+  // True for a consult.
+  bool consult = 6;
+}
+
+// What RE has for the interaction.
+message ReattachResponse {
+  // The live entry; absent when there is none.
+  QueueEntry entry = 1;
+  // Every live reservation: each connected agent (several in a conference), any consult,
+  // any ASSIGNED offer.
+  repeated Reservation reservations = 2;
+  // The highest delivery_seq sent; unacknowledged messages are replayed on the stream.
+  uint64 last_delivery_seq = 3;
+}
+
+// Acknowledges Watch messages for many interactions at once.
+message AcknowledgeRequest {
+  // One per interaction, each with its acked_delivery_seq. Checked against the
+  // interaction's binding; a stale or foreign ack is ignored.
+  repeated InteractionOwner acks = 1;
+}
+
+// The result of an Acknowledge.
+message AcknowledgeResponse {
+  // Acks refused as stale or foreign.
+  uint32 ignored = 1;
+}
+
+// Opens the replica's stream. A newer stream of the same replica_id closes this one.
+message WatchRequest {
+  // The IE replica.
+  string replica_id = 1;
+  // Its deployment bin.
+  string bin = 2;
+}
+
+// The interaction a Watch message is about, and the owner_epoch RE holds for it.
+message EventTarget {
+  // The tenant.
+  string tenant_id = 1;
+  // The interaction.
+  string interaction_id = 2;
+  // The owner_epoch RE holds for it.
+  uint64 owner_epoch = 3;
+}
+
+// An agent accepted the offer.
+message Assigned {
+  // The interaction.
+  EventTarget target = 1;
+  // The reservation.
+  string reservation_id = 2;
+  // The entry.
+  string entry_id = 3;
+  // The agent.
+  string agent_id = 4;
+  // The agent softphone's SIP URI.
+  string agent_contact = 5;
+  // By when IE must report an outcome, epoch ms.
+  int64 deadline_ms = 6;
+  // True for a consult.
+  bool consult = 7;
+}
+
+// The entry's position changed. Never replayed.
+message PositionUpdate {
+  // The interaction.
+  EventTarget target = 1;
+  // The entry.
+  string entry_id = 2;
+  // Its position; 1 is next.
+  uint32 position = 3;
+  // The expected wait, in seconds.
+  uint32 expected_wait_s = 4;
+  // How expected_wait_s was made (0.11.0).
+  ExpectedWaitQuality expected_wait_quality = 5;
+}
+
+// What an overflow does.
+enum OverflowAction {
+  // Unknown.
+  OVERFLOW_ACTION_UNSPECIFIED = 0;
+  // RE moved the entry to queue_id: same entry, same times.
+  OVERFLOW_ACTION_QUEUE = 1;
+  // Voicemail.
+  OVERFLOW_ACTION_VOICEMAIL = 2;
+  // Offer the caller a callback; the entry keeps its place.
+  OVERFLOW_ACTION_CALLBACK_OFFER = 3;
+  // Disconnect with the queue's message.
+  OVERFLOW_ACTION_DISCONNECT = 4;
+  // Continue the flow at flow_step.
+  OVERFLOW_ACTION_FLOW_STEP = 5;
+}
+
+// The entry's overflow timer fired.
+message Overflow {
+  // The interaction.
+  EventTarget target = 1;
+  // The entry.
+  string entry_id = 2;
+  // What to do.
+  OverflowAction action = 3;
+  // The new queue, for OVERFLOW_ACTION_QUEUE.
+  string queue_id = 4;
+  // The flow step, for OVERFLOW_ACTION_FLOW_STEP.
+  string flow_step = 5;
+}
+
+// Time to place a scheduled callback. IE acknowledges right after its claim.
+message RunCallback {
+  // The tenant.
+  string tenant_id = 1;
+  // The new interaction's id, made by RE when it scheduled the callback (UUIDv7).
+  string interaction_id = 2;
+  // The interaction the caller asked for the callback in.
+  string original_interaction_id = 3;
+  // The callback.
+  string callback_id = 4;
+  // The reservation for the agent.
+  string reservation_id = 5;
+  // The agent.
+  string agent_id = 6;
+  // The agent softphone's SIP URI.
+  string agent_contact = 7;
+  // PII: phone. The E.164 number to call.
+  string number = 8;
+  // The queue.
+  string queue_id = 9;
+  // The original caller's first_queued_at_ms, for reports.
+  int64 first_queued_at_ms = 10;
+  // By when IE must report an outcome, epoch ms.
+  int64 deadline_ms = 11;
+}
+
+// RE withdrew a reservation.
+message Revoke {
+  // The interaction.
+  EventTarget target = 1;
+  // The reservation.
+  string reservation_id = 2;
+  // expired, agent_logged_out or forced_state.
+  string reason = 3;
+}
+
+// The agent finished wrap-up for a reservation. The disposition is on agent.events.
+message WrapUpEnded {
+  // The interaction.
+  EventTarget target = 1;
+  // The reservation.
+  string reservation_id = 2;
+  // The agent.
+  string agent_id = 3;
+  // When wrap-up ended, epoch ms.
+  int64 ended_at_ms = 4;
+}
+
+// Sent every 5 s on each stream.
+message Heartbeat {
+  // RE's clock, epoch ms.
+  int64 at_ms = 1;
+}
+
+// One message on a Watch stream.
+message WatchResponse {
+  // RE's leader epoch; IE ignores messages from an older one.
+  uint64 leader_epoch = 1;
+  // Per interaction, from 1; 0 for Heartbeat and PositionUpdate, which are never replayed.
+  uint64 delivery_seq = 2;
+  // The message.
+  oneof event {
+    // An agent accepted.
+    Assigned assigned = 3;
+    // A new position.
+    PositionUpdate position = 4;
+    // An overflow.
+    Overflow overflow = 5;
+    // Place a callback.
+    RunCallback run_callback = 6;
+    // A reservation was revoked.
+    Revoke revoke = 7;
+    // Wrap-up ended.
+    WrapUpEnded wrap_up_ended = 8;
+    // The stream is alive.
+    Heartbeat heartbeat = 9;
+    // A lent agent's availability, for the campaign leader's pacing (0.14.0).
+    AgentAvailability agent_availability = 10;
+  }
+}
+
+// The value of the parity-error trailer: the name lowercased, without the prefix.
+enum ErrorCode {
+  // Unknown.
+  ERROR_CODE_UNSPECIFIED = 0;
+  // ABORTED: a higher owner_epoch exists; stop acting on the interaction.
+  ERROR_CODE_STALE_OWNER = 1;
+  // UNAVAILABLE: not the leader; retry at parity-leader.
+  ERROR_CODE_NOT_LEADER = 2;
+  // INVALID_ARGUMENT: the tenant-id metadata and the request disagree.
+  ERROR_CODE_TENANT_MISMATCH = 3;
+  // INVALID_ARGUMENT: a field is missing or out of range.
+  ERROR_CODE_INVALID_REQUEST = 4;
+  // FAILED_PRECONDITION: the tenant isn't in this bin.
+  ERROR_CODE_TENANT_NOT_IN_BIN = 5;
+  // FAILED_PRECONDITION: no such queue.
+  ERROR_CODE_QUEUE_UNKNOWN = 6;
+  // FAILED_PRECONDITION: the queue is closed.
+  ERROR_CODE_QUEUE_CLOSED = 7;
+  // FAILED_PRECONDITION: the agent can't take a direct offer.
+  ERROR_CODE_AGENT_UNAVAILABLE = 8;
+  // FAILED_PRECONDITION: a higher enqueue_seq exists.
+  ERROR_CODE_STALE_ENQUEUE = 9;
+  // ALREADY_EXISTS: the same enqueue_seq with a different target RE never moved.
+  ERROR_CODE_ENQUEUE_CONFLICT = 10;
+  // RESOURCE_EXHAUSTED: the queue is full.
+  ERROR_CODE_QUEUE_FULL = 11;
+  // NOT_FOUND: no such reservation for this tenant and interaction.
+  ERROR_CODE_RESERVATION_UNKNOWN = 12;
+  // INTERNAL: a bug.
+  ERROR_CODE_INTERNAL = 13;
+  // NOT_FOUND: no such entry for this tenant and interaction.
+  ERROR_CODE_ENTRY_UNKNOWN = 14;
+  // ABORTED: an older Watch stream of the same replica_id.
+  ERROR_CODE_STREAM_SUPERSEDED = 15;
+  // UNAVAILABLE: RE can't make a callback or a voicemail task durable now; nothing changed (0.11.0).
+  ERROR_CODE_STORE_UNAVAILABLE = 16;
+  // FAILED_PRECONDITION: the entry isn't WAITING in a queue (an agent took it, or it overflowed) (0.11.0).
+  ERROR_CODE_ENTRY_NOT_WAITING = 17;
+  // FAILED_PRECONDITION: the agent isn't lent to this campaign and idle (READY, no reservation), so
+  // it can't be reserved for a campaign call (0.14.0). Also for another tenant's agent.
+  ERROR_CODE_AGENT_NOT_LENT = 18;
+}
+
+// ---- Campaign lending (0.14.0; IE step 13a, parity-cc-routing phase 8) ----
+// An agent works either inbound (routed by RE) or for one outbound campaign (dialed by IE), never
+// both. RE owns the mode flag (agents.v1 AgentView.mode); IE's campaign leader lends and returns
+// agents and reserves lent ones for its calls. CONVENTIONS.md "Campaign lending".
+
+// The campaign a lending request is about, and its leader's fence. Field 1 (`owner`) of
+// LendAgents and ReturnAgents.
+message CampaignOwner {
+  // The tenant.
+  string tenant_id = 1;
+  // The campaign (opaque, at most 128 characters: letters, digits and . _ : -).
+  string campaign_id = 2;
+  // The leader's fence: the create revision of its etcd key ie/campaign/{tenant}/{campaign}/leader,
+  // rising with each new leader. RE refuses a lower one (ABORTED / stale_owner).
+  uint64 owner_epoch = 3;
+  // The leader's IE replica: the campaign's AgentAvailability messages go to its Watch stream.
+  string replica_id = 4;
+}
+
+// What a lent agent is doing, as the campaign leader paces on it.
+enum AvailabilityState {
+  // Unknown.
+  AVAILABILITY_STATE_UNSPECIFIED = 0;
+  // Lent, READY and idle: ReserveAgent may take it.
+  AVAILABILITY_STATE_READY = 1;
+  // Lent but not READY (a break) or its desktop detached: not reservable.
+  AVAILABILITY_STATE_NOT_READY = 2;
+  // Reserved for a campaign call, not yet connected.
+  AVAILABILITY_STATE_RESERVED = 3;
+  // On a campaign call.
+  AVAILABILITY_STATE_ON_CALL = 4;
+  // In wrap-up after a campaign call; wrapup_ends_at_ms is when the wrap-up limit ends it.
+  AVAILABILITY_STATE_WRAP_UP = 5;
+  // Lending pending: the agent finishes its inbound work first (an offer, a call, its wrap-up).
+  AVAILABILITY_STATE_PENDING = 6;
+  // No longer lent to this campaign (returned, or logged out): the last message about the agent.
+  AVAILABILITY_STATE_RETURNED = 7;
+}
+
+// A lent agent's availability, for the campaign leader's pacing. Sent on the leader replica's Watch
+// stream after each change, and for every agent of the campaign when that stream opens. It carries
+// delivery_seq 0 and is never replayed: each message is the agent's whole availability (the latest
+// wins), so a lost one is made good by the next, or by the snapshot at the next stream open.
+message AgentAvailability {
+  // The tenant.
+  string tenant_id = 1;
+  // The agent.
+  string agent_id = 2;
+  // The campaign.
+  string campaign_id = 3;
+  // What the agent is doing.
+  AvailabilityState state = 4;
+  // With AVAILABILITY_STATE_WRAP_UP: when the wrap-up limit ends it, epoch ms; else 0.
+  int64 wrapup_ends_at_ms = 5;
+  // The campaign leader's fence RE holds.
+  uint64 owner_epoch = 6;
+}
+
+// Lends agents: by id, or `count` agents RE picks among the tenant's inbound agents with the skills.
+message LendAgentsRequest {
+  // The campaign and its leader.
+  CampaignOwner owner = 1;
+  // The agents to lend. Empty with count 0: take the campaign over and list its agents.
+  repeated string agent_ids = 2;
+  // Or: lend up to this many agents RE picks (agent_ids empty). RE prefers idle READY agents,
+  // longest idle first, then busy ones (a pending switch), then NOT_READY ones.
+  uint32 count = 3;
+  // With count: the skills a picked agent must have.
+  repeated Requirement requirements = 4;
+  // With count: makes a repeat return the first answer (letters, digits and . _ : -, at most 200).
+  string request_id = 5;
+}
+
+// What became of one agent of a LendAgents request.
+enum LendResult {
+  // Unknown.
+  LEND_RESULT_UNSPECIFIED = 0;
+  // Lent now: it was idle (or already lent to this campaign).
+  LEND_RESULT_LENT = 1;
+  // The switch waits until the agent is idle or its wrap-up ends; AgentAvailability tells when.
+  LEND_RESULT_PENDING = 2;
+  // No such agent in this tenant (another tenant's agents are never lent).
+  LEND_RESULT_UNKNOWN_AGENT = 3;
+  // Logged out, or its desktop isn't attached.
+  LEND_RESULT_NOT_LOGGED_IN = 4;
+  // Lent to another campaign: that campaign must return it first.
+  LEND_RESULT_OTHER_CAMPAIGN = 5;
+  // Refused, not deferred: lending it would leave an open queue with no logged-in agent who can
+  // take it (PLAN §4.3 coverage).
+  LEND_RESULT_COVERAGE = 6;
+}
+
+// One agent's result.
+message LentAgent {
+  // The agent.
+  string agent_id = 1;
+  // What became of it.
+  LendResult result = 2;
+}
+
+// The agents asked for (or picked), and every agent lent to the campaign now.
+message LendAgentsResponse {
+  // Per agent asked, in the request's order; with count, the agents picked.
+  repeated LentAgent agents = 1;
+  // Every agent lent to the campaign now, pending ones included, with its availability.
+  repeated AgentAvailability lent = 2;
+  // A repeat of request_id: the first answer's agents.
+  bool existing = 3;
+}
+
+// Gives agents back to inbound routing.
+message ReturnAgentsRequest {
+  // The campaign and its leader.
+  CampaignOwner owner = 1;
+  // The agents to give back; empty: every agent lent to the campaign (it ended).
+  repeated string agent_ids = 2;
+}
+
+// What became of one agent of a ReturnAgents request.
+enum ReturnResult {
+  // Unknown.
+  RETURN_RESULT_UNSPECIFIED = 0;
+  // Back to inbound now (a pending lend is cancelled).
+  RETURN_RESULT_RETURNED = 1;
+  // Back once its campaign call's wrap-up ends.
+  RETURN_RESULT_PENDING = 2;
+  // Not lent to this campaign (never, or already returned).
+  RETURN_RESULT_NOT_LENT = 3;
+}
+
+// One agent's result.
+message ReturnedAgent {
+  // The agent.
+  string agent_id = 1;
+  // What became of it.
+  ReturnResult result = 2;
+}
+
+// The agents given back.
+message ReturnAgentsResponse {
+  // Per agent, in the request's order (empty request: every agent that was lent).
+  repeated ReturnedAgent agents = 1;
+}
+
+// Reserves an idle lent agent for one campaign call.
+message ReserveAgentRequest {
+  // The campaign call: the interaction IE made for it, and its owner.
+  InteractionOwner owner = 1;
+  // The campaign and its leader (same tenant as owner).
+  CampaignOwner campaign = 2;
+  // The lent agent: AVAILABILITY_STATE_READY, else FAILED_PRECONDITION / agent_not_lent.
+  string agent_id = 3;
+}
+
+// The reservation: ASSIGNED, with the agent's contact and deadline as in Assigned.
+message ReserveAgentResponse {
+  // The reservation (consult false).
+  Reservation reservation = 1;
+  // A repeat for the same interaction and agent: the reservation made first.
+  bool existing = 2;
+}

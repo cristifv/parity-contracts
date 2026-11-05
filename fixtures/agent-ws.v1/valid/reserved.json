@@ -1,0 +1,14 @@
+{
+  "description": "Auto-answer allowed",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_desktop",
+  "frame": {
+    "v": 1,
+    "type": "reserved",
+    "seq": 3,
+    "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+    "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "origin": "inbound"
+  }
+}

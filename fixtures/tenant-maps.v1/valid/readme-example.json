@@ -1,0 +1,92 @@
+{
+  "description": "parity-store README's example (a production file)",
+  "kind": "tenant_maps",
+  "writer_valid": true,
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "acme",
+        "name": "Acme Ltd",
+        "tier": "small",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+493012345678",
+          "+493012345679"
+        ],
+        "sip_domains": [
+          "acme.eu1.platform.example"
+        ]
+      },
+      {
+        "id": "globex",
+        "name": "Globex Ltd",
+        "tier": "mid",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1b",
+          "deployment_unit": "bin-b",
+          "media_track": "green"
+        },
+        "numbers": [
+          "+441234567890"
+        ],
+        "sip_domains": [
+          "globex.eu1.platform.example"
+        ]
+      },
+      {
+        "id": "initech",
+        "name": "Initech Group",
+        "tier": "enterprise"
+      },
+      {
+        "id": "initech-de",
+        "name": "initech-de",
+        "parent": "initech",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+4989555000"
+        ],
+        "sip_domains": [
+          "initech-de.eu1.platform.example"
+        ]
+      },
+      {
+        "id": "initech-us",
+        "name": "initech-us",
+        "parent": "initech",
+        "placement": {
+          "home_zone": "us1",
+          "failover_zone": "us2",
+          "zone": "us1",
+          "cell": "us1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+12125550100"
+        ],
+        "sip_domains": [
+          "initech-us.us1.platform.example"
+        ]
+      }
+    ]
+  }
+}

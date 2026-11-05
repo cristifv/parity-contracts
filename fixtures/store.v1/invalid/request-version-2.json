@@ -1,0 +1,22 @@
+{
+  "description": "An unknown major: bad_request",
+  "kind": "store",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "tenant.store.requests",
+    "key": "acme",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 2,
+      "cmd": "ping",
+      "id": "admin-api-1:ping-0001",
+      "reply_to": "replies.admin-console"
+    }
+  }
+}

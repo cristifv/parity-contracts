@@ -1,0 +1,18 @@
+{
+  "description": "A voice offer",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_desktop",
+  "frame": {
+    "v": 1,
+    "type": "offer",
+    "seq": 2,
+    "offer_id": "0192f6a1-6000-7aaa-8bbb-000000000001",
+    "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "channel": "voice",
+    "queue_id": "sales",
+    "expires_at_ms": 1792800015000,
+    "consult": false,
+    "direct": false
+  }
+}

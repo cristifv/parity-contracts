@@ -1,0 +1,33 @@
+{
+  "description": "attrs.from holding a whole number (a phone-class name).",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "unmasked_phone"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-telephony-controller.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-telephony-controller",
+      "version": "0.4.1",
+      "instance": "tc-media-1",
+      "incarnation": "tc-7f3a",
+      "seq": 101,
+      "event": "session.arrived",
+      "msg": "call arrived from the edge",
+      "node": "media-1",
+      "leg_id": "6f1c2a9e-0000-4000-8000-000000000001",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "attrs": {
+        "direction": "inbound",
+        "from": "+447700900123"
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "description": "One level only: a sub-tenant can't have sub-tenants",
+  "kind": "tenant_maps",
+  "writer_valid": false,
+  "violates": [
+    "nested_sub_tenant"
+  ],
+  "at": "/tenants/2/parent",
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "initech",
+        "name": "Initech Group",
+        "tier": "enterprise"
+      },
+      {
+        "id": "initech-de",
+        "name": "initech-de",
+        "parent": "initech"
+      },
+      {
+        "id": "initech-de-munich",
+        "name": "initech-de-munich",
+        "parent": "initech-de",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550102900"
+        ],
+        "sip_domains": [
+          "initech-de-munich.eu1.platform.example"
+        ]
+      }
+    ]
+  }
+}

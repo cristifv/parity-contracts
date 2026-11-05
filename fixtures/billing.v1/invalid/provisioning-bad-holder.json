@@ -1,0 +1,25 @@
+{
+  "description": "A holder that is neither a signup nor an onboarding",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "admin.provisioning.requests",
+    "key": "acme-new",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "reserve_tenant_id",
+      "id": "parity-billing-1:prov:0192f6a1-e000-7aaa-8bbb-00000000a001:reserve_tenant_id",
+      "reply_to": "replies.parity-billing",
+      "tenant_id": "acme-new",
+      "holder": "someone",
+      "ttl_s": 86400
+    }
+  }
+}

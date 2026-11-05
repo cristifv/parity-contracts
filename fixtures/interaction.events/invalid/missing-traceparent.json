@@ -1,0 +1,34 @@
+{
+  "description": "No traceparent: accepted, a new trace starts",
+  "kind": "kafka",
+  "writer_valid": false,
+  "violates": [
+    "missing_header:traceparent"
+  ],
+  "reader": "apply",
+  "record": {
+    "topic": "interaction.events",
+    "key": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "headers": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "schema_version": "1"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-7c40-701a-8000-00000000001a",
+      "type": "hold_started",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "tenant_id": "acme",
+      "seq": 9,
+      "owner_epoch": 1042,
+      "at_ms": 1792800009000,
+      "channel": "voice",
+      "direction": "inbound",
+      "cpaas": false,
+      "customer_key": "ck_3q2-xV9mZr8LbN0pQ7sT1w",
+      "by": "agent",
+      "agent_id": "agent-7f3a"
+    }
+  }
+}

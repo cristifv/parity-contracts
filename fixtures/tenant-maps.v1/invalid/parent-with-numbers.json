@@ -1,0 +1,41 @@
+{
+  "description": "A parent takes no traffic: no numbers",
+  "kind": "tenant_maps",
+  "writer_valid": false,
+  "violates": [
+    "parent_takes_traffic"
+  ],
+  "at": "/tenants/0",
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "initech",
+        "name": "Initech Group",
+        "tier": "enterprise",
+        "numbers": [
+          "+15550102999"
+        ]
+      },
+      {
+        "id": "initech-de",
+        "name": "initech-de",
+        "parent": "initech",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550102100"
+        ],
+        "sip_domains": [
+          "initech-de.eu1.platform.example"
+        ]
+      }
+    ]
+  }
+}

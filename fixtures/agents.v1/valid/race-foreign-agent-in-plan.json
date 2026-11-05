@@ -1,0 +1,233 @@
+{
+  "description": "0.11.0: a plan or a pin naming another tenant's agent, or keyed for another tenant, changes nothing",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.agents.v1",
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "offer_timeout_ms": "15000",
+    "grace_ms": "60000",
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      },
+      {
+        "tenant_id": "globex",
+        "queue_id": "sales"
+      }
+    ],
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "state": "READY",
+        "queues": [
+          "sales"
+        ]
+      },
+      {
+        "tenant_id": "globex",
+        "agent_id": "agent-g01",
+        "state": "READY",
+        "queues": [
+          "sales"
+        ]
+      }
+    ],
+    "routing": [
+      {
+        "tenant_id": "acme",
+        "version": 1,
+        "mode": "auto"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/Watch",
+      "message": "parity.agents.v1.WatchRequest",
+      "body": {
+        "replica_id": "gw-bin-a-1",
+        "bin": "bin-a"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "expect": {
+        "message": "parity.agents.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/AttachAgent",
+      "message": "parity.agents.v1.AttachAgentRequest",
+      "body": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "replica_id": "gw-bin-a-1",
+        "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.AttachAgentResponse",
+        "body": {
+          "attach_generation": "1",
+          "existing": false,
+          "agent": {
+            "state": "AGENT_STATE_READY",
+            "since_ms": "1792800000000",
+            "state_version": "2",
+            "mode": "MODE_INBOUND",
+            "queues": [
+              {
+                "queue_id": "sales",
+                "tier": "MEMBERSHIP_TIER_PRIMARY"
+              }
+            ]
+          },
+          "leader_epoch": "7"
+        }
+      }
+    },
+    {
+      "op": "inject",
+      "what": "moves",
+      "args": {
+        "tenant_id": "acme",
+        "moves": [
+          {
+            "agent_id": "agent-g01",
+            "queues": [
+              {
+                "queue_id": "sales",
+                "tier": "MEMBERSHIP_TIER_PRIMARY"
+              }
+            ]
+          }
+        ],
+        "expect": {
+          "refused": 1,
+          "why": [
+            "agent-g01: not an agent of acme"
+          ]
+        }
+      }
+    },
+    {
+      "op": "inject",
+      "what": "config_routing_pin",
+      "args": {
+        "doc": {
+          "tenant_id": "acme",
+          "agent_id": "agent-g01",
+          "version": 1,
+          "queues": [
+            {
+              "queue_id": "sales",
+              "tier": "primary"
+            }
+          ],
+          "reason_code": "supervisor"
+        },
+        "expect": {
+          "applied": false
+        }
+      }
+    },
+    {
+      "op": "inject",
+      "what": "config_routing_pin",
+      "args": {
+        "doc": {
+          "tenant_id": "globex",
+          "agent_id": "agent-7f3a",
+          "version": 1,
+          "queues": [
+            {
+              "queue_id": "sales",
+              "tier": "secondary"
+            }
+          ],
+          "reason_code": "supervisor"
+        },
+        "expect": {
+          "applied": false
+        },
+        "key": "acme/agent-7f3a"
+      }
+    },
+    {
+      "op": "inject",
+      "what": "queue_call",
+      "args": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "queue_id": "sales"
+      }
+    },
+    {
+      "op": "deliver",
+      "message": "parity.agents.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "attach_generation": "1",
+        "delivery_seq": "1",
+        "offer": {
+          "offer_id": "0192f6a1-6000-7aaa-8bbb-000000000001",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "channel": "CHANNEL_VOICE",
+          "queue_id": "sales",
+          "expires_at_ms": "1792800015000",
+          "tier": "MEMBERSHIP_TIER_PRIMARY"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/AnswerOffer",
+      "message": "parity.agents.v1.AnswerOfferRequest",
+      "body": {
+        "session": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+          "attach_generation": "1"
+        },
+        "command_id": "gw:ru1IVg91XhHBPsq1l9PQ4S2VCTZ0MyPYEsl4w7md_3A",
+        "offer_id": "0192f6a1-6000-7aaa-8bbb-000000000001",
+        "decision": "DECISION_ACCEPT"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.agents.v1.AnswerOfferResponse",
+        "body": {
+          "decision": "DECISION_ACCEPT",
+          "reservation": {
+            "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "origin": "RESERVATION_ORIGIN_INBOUND"
+          }
+        }
+      }
+    }
+  ]
+}

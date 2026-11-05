@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/queue-events/v1.json",
+  "title": "queue.events (0.12.0)",
+  "description": "parity-cc-routing -> wallboards and reports (its PLAN §5.4; phase 5): queue_snapshot per queue per optimizer tick: what waits, the model's EWT for a new caller, the levers in force and the 15-minute bucket so far. Key: tenant_id; headers tenant_id and schema_version (Q12). At-least-once: readers drop a repeated event_id. No personal data (no agent ids, numbers or customer keys). Events are not state: under backpressure RE drops and counts them.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "type",
+    "tenant_id",
+    "at_ms",
+    "queue_id",
+    "waiting",
+    "head_age_s",
+    "logged_in",
+    "ewt_s",
+    "ewt_quality",
+    "bucket"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUIDv7"
+    },
+    "type": {
+      "enum": [
+        "queue_snapshot"
+      ]
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "queue_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    },
+    "waiting": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "vip_waiting": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "head_age_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "logged_in": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "busy_agents": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ewt_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "ewt_quality": {
+      "enum": [
+        "exact",
+        "approx",
+        "overloaded",
+        "long",
+        "refused"
+      ],
+      "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+    },
+    "weight": {
+      "type": "number",
+      "minimum": 0
+    },
+    "delay_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "bucket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start_ms",
+        "offered",
+        "answered",
+        "answered_in_sla",
+        "abandoned",
+        "sl_so_far"
+      ],
+      "properties": {
+        "start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "answered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "answered_in_sla": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "abandoned": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sl_so_far": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

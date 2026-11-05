@@ -1,0 +1,413 @@
+{
+  "description": "0.14.0: the leader reserves a lent agent for its campaign call; ReportOutcome and CallEnded run the reservation as an inbound one; AgentAvailability follows the agent through its wrap-up",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.routing.v1",
+  "pins": [
+    "IE PLAN campaign dialing (progressive)"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      }
+    ],
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example",
+        "queues": [
+          "sales"
+        ],
+        "ready_since_ms": "1792799980000"
+      },
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-2b9c",
+        "agent_contact": "sip:agent-2b9c@acme.agents.example",
+        "queues": [
+          "sales"
+        ]
+      }
+    ],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/LendAgents",
+      "message": "parity.routing.v1.LendAgentsRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "campaign_id": "spring-renewals",
+          "owner_epoch": "2051",
+          "replica_id": "ie-bin-a-1"
+        },
+        "agent_ids": [
+          "agent-7f3a"
+        ]
+      },
+      "expect": {
+        "message": "parity.routing.v1.LendAgentsResponse",
+        "body": {
+          "agents": [
+            {
+              "agent_id": "agent-7f3a",
+              "result": "LEND_RESULT_LENT"
+            }
+          ],
+          "lent": [
+            {
+              "tenant_id": "acme",
+              "agent_id": "agent-7f3a",
+              "campaign_id": "spring-renewals",
+              "state": "AVAILABILITY_STATE_READY",
+              "owner_epoch": "2051"
+            }
+          ],
+          "existing": false
+        }
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "0",
+        "agent_availability": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "campaign_id": "spring-renewals",
+          "state": "AVAILABILITY_STATE_READY",
+          "owner_epoch": "2051"
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "ms": "1000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReserveAgent",
+      "message": "parity.routing.v1.ReserveAgentRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6d0-3a1b-7c2d-8e3f-405162738495",
+          "owner_epoch": "1082",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "campaign": {
+          "tenant_id": "acme",
+          "campaign_id": "spring-renewals",
+          "owner_epoch": "2051",
+          "replica_id": "ie-bin-a-1"
+        },
+        "agent_id": "agent-7f3a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.ReserveAgentResponse",
+        "body": {
+          "reservation": {
+            "reservation_id": "0192f6d0-9100-7ccc-8ddd-000000000001",
+            "agent_id": "agent-7f3a",
+            "agent_contact": "sip:agent-7f3a@acme.agents.example",
+            "deadline_ms": "1792800031000",
+            "state": "RESERVATION_STATE_ASSIGNED"
+          },
+          "existing": false
+        }
+      },
+      "note": "before the dial: an answered call never waits"
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "0",
+        "agent_availability": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "campaign_id": "spring-renewals",
+          "state": "AVAILABILITY_STATE_RESERVED",
+          "owner_epoch": "2051"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReserveAgent",
+      "message": "parity.routing.v1.ReserveAgentRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6d0-3a1b-7c2d-8e3f-405162738495",
+          "owner_epoch": "1082",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "campaign": {
+          "tenant_id": "acme",
+          "campaign_id": "spring-renewals",
+          "owner_epoch": "2051",
+          "replica_id": "ie-bin-a-1"
+        },
+        "agent_id": "agent-7f3a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.ReserveAgentResponse",
+        "body": {
+          "reservation": {
+            "reservation_id": "0192f6d0-9100-7ccc-8ddd-000000000001",
+            "agent_id": "agent-7f3a",
+            "agent_contact": "sip:agent-7f3a@acme.agents.example",
+            "deadline_ms": "1792800031000",
+            "state": "RESERVATION_STATE_ASSIGNED"
+          },
+          "existing": true
+        }
+      },
+      "note": "a retry: the same reservation"
+    },
+    {
+      "op": "advance",
+      "ms": "9000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReportOutcome",
+      "message": "parity.routing.v1.ReportOutcomeRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6d0-3a1b-7c2d-8e3f-405162738495",
+          "owner_epoch": "1082",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "reservation_id": "0192f6d0-9100-7ccc-8ddd-000000000001",
+        "outcome": "OUTCOME_CONNECTED"
+      },
+      "expect": {
+        "message": "parity.routing.v1.ReportOutcomeResponse",
+        "body": {
+          "existing": false,
+          "recorded": "OUTCOME_CONNECTED"
+        }
+      },
+      "note": "the customer answered"
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "0",
+        "agent_availability": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "campaign_id": "spring-renewals",
+          "state": "AVAILABILITY_STATE_ON_CALL",
+          "owner_epoch": "2051"
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "ms": "120000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/CallEnded",
+      "message": "parity.routing.v1.CallEndedRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6d0-3a1b-7c2d-8e3f-405162738495",
+          "owner_epoch": "1082",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6d0-9100-7ccc-8ddd-000000000001",
+        "ended_at_ms": "1792800130000"
+      },
+      "expect": {
+        "message": "parity.routing.v1.CallEndedResponse",
+        "body": {
+          "existing": false
+        }
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "0",
+        "agent_availability": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "campaign_id": "spring-renewals",
+          "state": "AVAILABILITY_STATE_WRAP_UP",
+          "owner_epoch": "2051",
+          "wrapup_ends_at_ms": "1792800190000"
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "ms": "60000",
+      "note": "the wrap-up limit (60 s)"
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "1",
+        "wrap_up_ended": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6d0-3a1b-7c2d-8e3f-405162738495",
+            "owner_epoch": "1082"
+          },
+          "reservation_id": "0192f6d0-9100-7ccc-8ddd-000000000001",
+          "agent_id": "agent-7f3a",
+          "ended_at_ms": "1792800190000"
+        }
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "0",
+        "agent_availability": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "campaign_id": "spring-renewals",
+          "state": "AVAILABILITY_STATE_READY",
+          "owner_epoch": "2051"
+        }
+      },
+      "note": "lent and idle again: the leader may reserve it"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReturnAgents",
+      "message": "parity.routing.v1.ReturnAgentsRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "campaign_id": "spring-renewals",
+          "owner_epoch": "2051",
+          "replica_id": "ie-bin-a-1"
+        },
+        "agent_ids": []
+      },
+      "expect": {
+        "message": "parity.routing.v1.ReturnAgentsResponse",
+        "body": {
+          "agents": [
+            {
+              "agent_id": "agent-7f3a",
+              "result": "RETURN_RESULT_RETURNED"
+            }
+          ]
+        }
+      },
+      "note": "the campaign ended: all back"
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "0",
+        "agent_availability": {
+          "tenant_id": "acme",
+          "agent_id": "agent-7f3a",
+          "campaign_id": "spring-renewals",
+          "state": "AVAILABILITY_STATE_RETURNED",
+          "owner_epoch": "2051"
+        }
+      }
+    }
+  ]
+}

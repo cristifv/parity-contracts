@@ -1,0 +1,23 @@
+{
+  "description": "A NUL in tenant_id (Postgres would refuse it): bad_request, never retried",
+  "kind": "store",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "tenant.store.requests",
+    "key": "acme",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "get_tenant",
+      "id": "admin-api-1:get_tenant-0001",
+      "reply_to": "replies.admin-console",
+      "tenant_id": "ac\u0000me"
+    }
+  }
+}

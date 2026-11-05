@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "service": "parity-frontend",
+  "description": "Starter catalogue for parity-frontend (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-frontend.v1.json; the service owns it from then on.",
+  "events": {
+    "http.request": {
+      "description": "One HTTP request served (attrs.status).",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "requires": [
+        "request_id",
+        "op",
+        "outcome",
+        "duration_ms"
+      ],
+      "attrs": [
+        "status"
+      ]
+    },
+    "signup.submitted": {
+      "description": "A signup form was accepted (the address never appears).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "request_id"
+      ],
+      "attrs": [
+        "signup_id"
+      ]
+    },
+    "turnstile.refused": {
+      "description": "The Turnstile check failed.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "request_id",
+        "error"
+      ]
+    },
+    "email.sent": {
+      "description": "A transactional email was handed to the provider (attrs.email_kind).",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "email_kind"
+      ]
+    }
+  }
+}

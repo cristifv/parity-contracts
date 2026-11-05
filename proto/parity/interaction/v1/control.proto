@@ -1,0 +1,251 @@
+syntax = "proto3";
+
+// parity-gateway's agents module -> interaction-engine: an agent's call controls
+// (parity-gateway PLAN.md, contract 3; CONVENTIONS.md "The control contract").
+// gRPC metadata: tenant-id (equal to the request's tenant_id), traceparent. Clients: the mTLS
+// identity parity-gateway.<bin>. Errors: the canonical status plus parity-error (ErrorCode).
+package parity.interaction.v1;
+
+option java_multiple_files = true;
+option java_package = "parity.contracts.interaction.v1";
+
+// Served by every IE replica of the bin; a replica that doesn't own the interaction forwards
+// to the owner; during an adoption gap: UNAVAILABLE/owner_moving (retry after 1 s).
+service InteractionControlService {
+  // One call control. Authorized only for the agent holding the interaction's current
+  // reservation, or an agent whose leg is live in the call (consult, 3-way); anyone else:
+  // not_your_call. Repeat-safe by (tenant, command_id); the same id with another action:
+  // conflict.
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+  // The call as the agent's desktop shows it; same authorization as Execute.
+  rpc Get(GetRequest) returns (GetResponse);
+}
+
+// Hold the customer (music from parity-ms). The softphone never re-INVITEs.
+message Hold {}
+
+// Resume from hold.
+message Resume {}
+
+// Mute the agent's leg in parity-ms (the same state as the agent's DTMF mute).
+message Mute {}
+
+// Unmute the agent's leg.
+message Unmute {}
+
+// Transfer the customer and leave.
+message BlindTransfer {
+  // Where to.
+  Target target = 1;
+}
+
+// Call a consult target while the customer is held.
+message Consult {
+  // Who.
+  Target target = 1;
+}
+
+// Hand the customer to the consulted party and leave.
+message CompleteTransfer {}
+
+// Join the customer, the agent and the consulted party (3-way).
+message Merge {}
+
+// End the consult and return to the customer.
+message CancelConsult {}
+
+// Remove another party's leg from the call.
+message RemoveParty {
+  // The leg (UUID).
+  string leg_id = 1;
+}
+
+// Leave the call; IE decides whether the call ends.
+message Hangup {}
+
+// A transfer or consult target.
+message Target {
+  // Exactly one.
+  oneof kind {
+    // A queue.
+    string queue_id = 1;
+    // Another agent of the same tenant.
+    string agent_id = 2;
+    // PII: phone. An E.164 number, checked by IE's destination rules.
+    string number = 3;
+  }
+}
+
+// One control.
+message ExecuteRequest {
+  // The tenant, from the agent's token; equal to the tenant-id metadata.
+  string tenant_id = 1;
+  // The interaction.
+  string interaction_id = 2;
+  // The agent, from the agent's token.
+  string agent_id = 3;
+  // The reservation the gateway knows for the agent; informative (IE's state decides).
+  string reservation_id = 4;
+  // gw: plus 43 base64url characters (CONVENTIONS.md, "command_id from a desktop").
+  string command_id = 5;
+  // The control.
+  oneof action {
+    // Hold.
+    Hold hold = 10;
+    // Resume.
+    Resume resume = 11;
+    // Mute.
+    Mute mute = 12;
+    // Unmute.
+    Unmute unmute = 13;
+    // Blind transfer.
+    BlindTransfer blind_transfer = 14;
+    // Consult.
+    Consult consult = 15;
+    // Complete the consult transfer.
+    CompleteTransfer complete_transfer = 16;
+    // 3-way.
+    Merge merge = 17;
+    // Cancel the consult.
+    CancelConsult cancel_consult = 18;
+    // Remove a party.
+    RemoveParty remove_party = 19;
+    // Hang up.
+    Hangup hangup = 20;
+  }
+}
+
+// How a control ended.
+enum Outcome {
+  // Unknown.
+  OUTCOME_UNSPECIFIED = 0;
+  // Done now.
+  OUTCOME_DONE = 1;
+  // A repeat of a command_id already done: nothing changed.
+  OUTCOME_ALREADY_DONE = 2;
+}
+
+// The control's result; the new state also comes as interaction.events.
+message ExecuteResponse {
+  // The outcome.
+  Outcome outcome = 1;
+  // The call after the control.
+  AgentCallView call = 2;
+}
+
+// Reads the call.
+message GetRequest {
+  // The tenant.
+  string tenant_id = 1;
+  // The interaction.
+  string interaction_id = 2;
+  // The agent asking.
+  string agent_id = 3;
+}
+
+// The call.
+message GetResponse {
+  // The call.
+  AgentCallView call = 1;
+}
+
+// The call's state, as a desktop shows it.
+enum CallState {
+  // Unknown.
+  CALL_STATE_UNSPECIFIED = 0;
+  // The agent's leg is ringing.
+  CALL_STATE_RINGING = 1;
+  // Connected.
+  CALL_STATE_CONNECTED = 2;
+  // Ended.
+  CALL_STATE_ENDED = 3;
+}
+
+// A party's role.
+enum PartyRole {
+  // Unknown.
+  PARTY_ROLE_UNSPECIFIED = 0;
+  // The customer.
+  PARTY_ROLE_CUSTOMER = 1;
+  // An agent.
+  PARTY_ROLE_AGENT = 2;
+  // A supervisor.
+  PARTY_ROLE_SUPERVISOR = 3;
+  // An external number.
+  PARTY_ROLE_EXTERNAL = 4;
+}
+
+// Recording.
+enum RecordingState {
+  // Unknown.
+  RECORDING_STATE_UNSPECIFIED = 0;
+  // Not recording.
+  RECORDING_STATE_OFF = 1;
+  // Recording.
+  RECORDING_STATE_ON = 2;
+  // Paused (DTMF action or consent).
+  RECORDING_STATE_PAUSED = 3;
+}
+
+// A party in the call. No phone number.
+message Party {
+  // The role.
+  PartyRole role = 1;
+  // For an agent or supervisor.
+  string agent_id = 2;
+  // The leg (UUID).
+  string leg_id = 3;
+  // True while the leg is live.
+  bool live = 4;
+}
+
+// The call as the agent's desktop shows it.
+message AgentCallView {
+  // The interaction.
+  string interaction_id = 1;
+  // The state.
+  CallState state = 2;
+  // The customer is on hold.
+  bool held = 3;
+  // The asking agent's leg is muted.
+  bool muted = 4;
+  // A consult is in progress.
+  bool consulting = 5;
+  // The parties.
+  repeated Party parties = 6;
+  // Recording.
+  RecordingState recording = 7;
+  // False while IE has lost control of the call (unmanaged): controls are refused, the call
+  // stays up.
+  bool managed = 8;
+  // The owner's epoch; with seq, orders this view against interaction.events.
+  uint64 owner_epoch = 9;
+  // The last event seq this view includes.
+  uint64 seq = 10;
+  // The interaction's current reservation.
+  string reservation_id = 11;
+}
+
+// The value of the parity-error trailer: the name lowercased, without the prefix.
+enum ErrorCode {
+  // Unknown.
+  ERROR_CODE_UNSPECIFIED = 0;
+  // NOT_FOUND: no such interaction for this tenant.
+  ERROR_CODE_NOT_FOUND = 1;
+  // PERMISSION_DENIED: the agent holds neither the current reservation nor a live leg.
+  ERROR_CODE_NOT_YOUR_CALL = 2;
+  // FAILED_PRECONDITION: not possible in the call's state (e.g. resume without hold).
+  ERROR_CODE_INVALID_STATE = 3;
+  // FAILED_PRECONDITION: IE has lost control of the call; it stays up.
+  ERROR_CODE_CALL_UNMANAGED = 4;
+  // UNAVAILABLE: the owner is moving; retry after 1 s with the same command_id.
+  ERROR_CODE_OWNER_MOVING = 5;
+  // FAILED_PRECONDITION: the transfer or consult target is not allowed.
+  ERROR_CODE_DESTINATION_NOT_ALLOWED = 6;
+  // INVALID_ARGUMENT: the tenant-id metadata and the request disagree.
+  ERROR_CODE_TENANT_MISMATCH = 7;
+  // INVALID_ARGUMENT: a field is missing or out of range.
+  ERROR_CODE_INVALID_REQUEST = 8;
+  // ALREADY_EXISTS: the command_id was used for a different action.
+  ERROR_CODE_CONFLICT = 9;
+}

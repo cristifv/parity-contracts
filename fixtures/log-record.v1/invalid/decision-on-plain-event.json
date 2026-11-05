@@ -1,0 +1,36 @@
+{
+  "description": "A decision on an event whose catalogue entry has no decision.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "decision_level"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-cc-routing.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-cc-routing",
+      "version": "0.5.0",
+      "instance": "re-b0-1",
+      "seq": 101,
+      "event": "offer.sent",
+      "msg": "offer sent",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "agent_id": "agent-7",
+      "reservation_id": "0192f3c1-6c00-7000-8000-00000000a001",
+      "attrs": {
+        "timeout_ms": 15000
+      },
+      "decision": {
+        "kind": "agent.select",
+        "sampled": true,
+        "chosen": "agent-7"
+      }
+    }
+  ]
+}

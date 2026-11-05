@@ -1,0 +1,223 @@
+{
+  "description": "A caller's first queue",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.routing.v1",
+  "pins": [
+    "coverage"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      }
+    ],
+    "agents": [],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "ms": "3000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819204",
+          "owner_epoch": "1052",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800003000",
+        "ordering_at_ms": "1792800003000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000002",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800003000",
+            "ordering_at_ms": "1792800003000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1
+          },
+          "existing": false
+        }
+      },
+      "note": "a caller ahead"
+    },
+    {
+      "op": "advance",
+      "ms": "1000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819205",
+          "owner_epoch": "1062",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800004000",
+        "ordering_at_ms": "1792800004000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000003",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800004000",
+            "ordering_at_ms": "1792800004000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 2
+          },
+          "existing": false
+        }
+      },
+      "note": "another caller ahead"
+    },
+    {
+      "op": "advance",
+      "ms": "1000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "requirements": [
+          {
+            "skill_id": "sales-en",
+            "min_level": 2
+          }
+        ],
+        "priority": 0,
+        "first_queued_at_ms": "1792800005000",
+        "ordering_at_ms": "1792800005000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB",
+          "customer_key": "ck_3q2-xV9mZr8LbN0pQ7sT1w"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800005000",
+            "ordering_at_ms": "1792800005000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 3,
+            "expected_wait_s": 40
+          },
+          "existing": false
+        }
+      }
+    }
+  ]
+}

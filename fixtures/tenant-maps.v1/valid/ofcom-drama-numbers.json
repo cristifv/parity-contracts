@@ -1,0 +1,36 @@
+{
+  "description": "A test file may use Ofcom's drama range +44 7700 900xxx",
+  "kind": "tenant_maps",
+  "writer_valid": true,
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "acme",
+        "name": "Acme Ltd",
+        "tier": "small",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+447700900123"
+        ],
+        "sip_domains": [
+          "acme.eu1.platform.example"
+        ]
+      }
+    ],
+    "test": {
+      "agents": {
+        "acme": [
+          "a1"
+        ]
+      }
+    }
+  }
+}

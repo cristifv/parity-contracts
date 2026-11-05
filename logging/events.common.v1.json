@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "service": "*",
+  "description": "Events every service writes (normative). A service's own catalogue must not repeat these names; contract-check merges this file into every catalogue.",
+  "events": {
+    "service.starting": {
+      "description": "The process started and read its settings; nothing is served yet.",
+      "levels": [
+        "info"
+      ]
+    },
+    "service.ready": {
+      "description": "Every readiness check passed: the healthy file is written, traffic may come.",
+      "levels": [
+        "info"
+      ]
+    },
+    "service.not_ready": {
+      "description": "A readiness check fails; attrs.failing names the checks.",
+      "levels": [
+        "warn"
+      ],
+      "attrs": [
+        "failing"
+      ]
+    },
+    "service.draining": {
+      "description": "Draining began (cause: the signal or operator action): no new work is taken.",
+      "levels": [
+        "info"
+      ]
+    },
+    "service.stopped": {
+      "description": "The process is exiting with attrs.exit_code.",
+      "levels": [
+        "info",
+        "error"
+      ],
+      "attrs": [
+        "exit_code"
+      ]
+    },
+    "service.panic": {
+      "description": "An unexpected crash (a Rust panic, an uncaught Java error): error.stack holds the stack.",
+      "levels": [
+        "fatal"
+      ],
+      "requires": [
+        "error"
+      ]
+    },
+    "config.loaded": {
+      "description": "A configuration file or document was read and accepted (attrs.file).",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "file"
+      ]
+    },
+    "config.refused": {
+      "description": "A configuration file or document was refused; the old one stays (attrs.file).",
+      "levels": [
+        "error"
+      ],
+      "requires": [
+        "error"
+      ],
+      "attrs": [
+        "file"
+      ]
+    },
+    "log.dropped": {
+      "description": "Records were dropped because the log queue was full (attrs.dropped since the last report). The seq gap shows where.",
+      "levels": [
+        "warn"
+      ],
+      "attrs": [
+        "dropped"
+      ]
+    },
+    "dependency.unavailable": {
+      "description": "A dependency (attrs.dependency: kafka, etcd, postgres, redis, routing, telephony) can't be reached; the service retries.",
+      "levels": [
+        "warn",
+        "error"
+      ],
+      "requires": [
+        "error"
+      ],
+      "attrs": [
+        "dependency"
+      ],
+      "dedup": {
+        "window_ms": 10000,
+        "key": [
+          "attrs.dependency"
+        ]
+      }
+    },
+    "dependency.restored": {
+      "description": "The dependency in attrs.dependency answers again.",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "dependency"
+      ]
+    }
+  }
+}

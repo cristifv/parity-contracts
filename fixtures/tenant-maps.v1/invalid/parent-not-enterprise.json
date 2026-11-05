@@ -1,0 +1,38 @@
+{
+  "description": "Only an enterprise tenant can be a parent",
+  "kind": "tenant_maps",
+  "writer_valid": false,
+  "violates": [
+    "parent_not_enterprise"
+  ],
+  "at": "/tenants/1/parent",
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "acme",
+        "name": "Acme Ltd",
+        "tier": "small"
+      },
+      {
+        "id": "acme-sales",
+        "name": "acme-sales",
+        "parent": "acme",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550102100"
+        ],
+        "sip_domains": [
+          "acme-sales.eu1.platform.example"
+        ]
+      }
+    ]
+  }
+}

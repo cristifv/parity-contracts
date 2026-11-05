@@ -1,0 +1,17 @@
+{
+  "description": "A deleted tenant: a tombstone, with its version header",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "billing.entitlements",
+    "key": "tenant:acme",
+    "headers": {
+      "schema_version": "1",
+      "version": "7",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "acme"
+    },
+    "value": null
+  }
+}

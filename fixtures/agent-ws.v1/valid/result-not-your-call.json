@@ -1,0 +1,17 @@
+{
+  "description": "A refused control",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_desktop",
+  "frame": {
+    "v": 1,
+    "type": "result",
+    "seq": 5,
+    "id": "0192f6a1-c000-7aaa-8bbb-000000000001",
+    "ok": false,
+    "error": {
+      "code": "not_your_call",
+      "retry": false
+    }
+  }
+}

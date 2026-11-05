@@ -1,0 +1,27 @@
+{
+  "description": "subscription.changed",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "billing.events",
+    "key": "acme",
+    "headers": {
+      "tenant_id": "acme",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-e000-7aaa-8bbb-000000000b01",
+      "type": "subscription.changed",
+      "at_ms": 1792800000000,
+      "tenant_id": "acme",
+      "subscription_id": "sub_1Abc",
+      "status": "active",
+      "plan_id": "team",
+      "seats": 10,
+      "period_end_ms": 1795392000000
+    }
+  }
+}

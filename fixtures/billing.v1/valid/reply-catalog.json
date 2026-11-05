@@ -1,0 +1,54 @@
+{
+  "description": "get_catalog's answer",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.parity-frontend",
+    "key": "parity-frontend-1:get-catalog-0001",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "parity-frontend-1:get-catalog-0001",
+      "ok": true,
+      "result": {
+        "version": 1,
+        "currency": "EUR",
+        "plans": [
+          {
+            "plan_id": "trial",
+            "kind": "trial",
+            "name": "Trial",
+            "available": true,
+            "features": [
+              "WebRTC test calls and web chat"
+            ],
+            "trial": {
+              "credit_minor": 1500,
+              "currency": "EUR",
+              "days": 30,
+              "max_seats": 3
+            }
+          },
+          {
+            "plan_id": "team",
+            "kind": "paid",
+            "name": "Team",
+            "available": true,
+            "features": [
+              "Voice, WebRTC and chat"
+            ],
+            "seat_price_minor": 6000,
+            "currency": "EUR",
+            "interval": "month",
+            "min_seats": 1,
+            "max_seats": 50
+          }
+        ]
+      }
+    }
+  }
+}

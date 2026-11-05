@@ -1,0 +1,20 @@
+{
+  "description": "A body that isn't JSON",
+  "kind": "kafka",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reject",
+  "record": {
+    "topic": "interaction.events",
+    "key": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "headers": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value_text": "{\"type\": \"hold_started\","
+  }
+}

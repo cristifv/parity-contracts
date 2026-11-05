@@ -1,0 +1,14 @@
+{
+  "description": "Commands carry an id",
+  "kind": "ws",
+  "writer_valid": false,
+  "direction": "to_gateway",
+  "frame": {
+    "v": 1,
+    "type": "hold",
+    "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203"
+  },
+  "violates": [
+    "schema"
+  ]
+}

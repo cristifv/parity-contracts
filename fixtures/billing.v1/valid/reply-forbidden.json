@@ -1,0 +1,23 @@
+{
+  "description": "A command on the wrong topic",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.admin-console",
+    "key": "admin-api-1:start-signup-0001",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "admin-api-1:start-signup-0001",
+      "ok": false,
+      "error": {
+        "code": "forbidden",
+        "message": "start_signup is accepted on billing.web.requests only"
+      }
+    }
+  }
+}

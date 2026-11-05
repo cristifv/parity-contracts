@@ -1,0 +1,31 @@
+{
+  "description": "A new tenant",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.events",
+    "key": "acme",
+    "headers": {
+      "tenant_id": "acme",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-e000-7aaa-8bbb-000000000001",
+      "type": "tenant.changed",
+      "at_ms": 1792800000000,
+      "tenant_id": "acme",
+      "revision": 7,
+      "tenant": {
+        "tenant_id": "acme",
+        "name": "Acme Ltd",
+        "tier": "small",
+        "parent": null,
+        "version": 1,
+        "updated_at_ms": 1792800000000
+      }
+    }
+  }
+}

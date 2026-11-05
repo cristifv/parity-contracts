@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/forecast-events/v1.json",
+  "title": "parity.forecast (0.12.0; 0.15.0 additive)",
+  "description": "parity-cc-routing -> reports and the cockpit (its PLAN §5.3, §5.4; phase 5): forecast per queue about once a minute: arrivals for the next 8 buckets of 15 minutes, handle time, wrap-up, patience and the VIP share, with the source of every number (the baseline EWMA + profile is always computed; a learned forecaster, phase 5b, falls back to it). Key: tenant_id; headers tenant_id and schema_version (Q12). At-least-once: readers drop a repeated event_id. No personal data (no agent ids, numbers or customer keys). Events are not state: under backpressure RE drops and counts them.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "type",
+    "tenant_id",
+    "at_ms",
+    "queue_id",
+    "source",
+    "aht_s",
+    "buckets"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUIDv7"
+    },
+    "type": {
+      "enum": [
+        "forecast"
+      ]
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "queue_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    },
+    "source": {
+      "enum": [
+        "config_default",
+        "ewma",
+        "ewma_profile",
+        "model"
+      ],
+      "description": "Where the arrival forecast came from: config_default (nothing observed yet), ewma, ewma_profile (with the weekday/slot profile of routing_bucket_actuals), model (a learned forecaster, phase 5b; the baseline is the fallback)"
+    },
+    "aht_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "wrap_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "patience_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "vip_share": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "buckets": {
+      "type": "array",
+      "maxItems": 96,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start_ms",
+          "arrivals_per_s",
+          "offered"
+        ],
+        "properties": {
+          "start_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "arrivals_per_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "offered": {
+            "type": "number",
+            "minimum": 0
+          },
+          "p10_per_s": {
+            "type": "number",
+            "minimum": 0,
+            "description": "0.15.0 (additive): source model only: the 10th percentile of arrivals_per_s"
+          },
+          "p90_per_s": {
+            "type": "number",
+            "minimum": 0,
+            "description": "0.15.0 (additive): source model only: the 90th percentile of arrivals_per_s"
+          }
+        }
+      }
+    },
+    "aht_source": {
+      "enum": [
+        "baseline",
+        "model"
+      ],
+      "description": "0.15.0 (additive): where aht_s came from: the baseline (pooled per tenant within its noise), or the learned forecaster when the tenant opted in and it passed the pooled-AHT check"
+    },
+    "model_version": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "0.15.0 (additive): source model only: the tenant's model version (0: the shared base model)"
+    },
+    "fallback": {
+      "enum": [
+        "no_model",
+        "stale",
+        "above_range",
+        "drift",
+        "ratio",
+        "width",
+        "realized_error",
+        "nan",
+        "negative",
+        "slow"
+      ],
+      "description": "0.15.0 (additive): the learned forecaster is on for the tenant but the baseline stands for this queue, and why (the first reason of the evaluation)"
+    }
+  },
+  "additionalProperties": false
+}

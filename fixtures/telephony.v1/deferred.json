@@ -1,0 +1,15 @@
+{
+  "description": "Names of telephony.v1 that have no script yet, each with the step that adds its scripts and implementation (TC ADR 0001 \u00a76). contract-check exempts them from coverage and fails if one gets a valid script, so this list only shrinks.",
+  "deferred": [
+    {
+      "kind": "rpc",
+      "name": "SetIsolation",
+      "step": "consults (IE step 11)"
+    },
+    {
+      "kind": "rpc",
+      "name": "SetMonitorMode",
+      "step": "supervisor modes (IE step 14)"
+    }
+  ]
+}

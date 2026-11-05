@@ -1,0 +1,32 @@
+{
+  "description": "set_placement on the admin topic (0.16.0): forbidden, rule placement_via_parity_rs; placements are parity-rs's",
+  "kind": "store",
+  "writer_valid": false,
+  "violates": [
+    "placement_via_parity_rs"
+  ],
+  "reader": "reply_error:forbidden",
+  "record": {
+    "topic": "tenant.store.admin.requests",
+    "key": "acme",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "set_placement",
+      "id": "admin-api-1:set_placement-0001",
+      "reply_to": "replies.admin-console",
+      "tenant_id": "acme",
+      "placement": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-a",
+        "media_track": "blue"
+      },
+      "expected_version": 1
+    }
+  }
+}

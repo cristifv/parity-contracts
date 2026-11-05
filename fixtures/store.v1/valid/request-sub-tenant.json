@@ -1,0 +1,22 @@
+{
+  "description": "put_tenant of a sub-tenant: no tier (it takes its parent's)",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.admin.requests",
+    "key": "initech-de",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "put_tenant",
+      "id": "admin-api-1:p-2",
+      "reply_to": "replies.admin-console",
+      "tenant_id": "initech-de",
+      "name": "Initech Germany",
+      "parent": "initech"
+    }
+  }
+}

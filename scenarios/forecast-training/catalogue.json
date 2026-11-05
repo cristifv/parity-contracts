@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "name": "catalogue",
+  "description": "The learned forecaster's compound training catalogue (parity-cc-routing PLAN §3.8, §5.9; the user, 2026-11-01): every production pattern as randomization ranges. scripts/forecast_scenarios.py expand draws concrete training_sample files from it (seeds recorded); RE's series DES turns them into 10 s, 1 min and 15 min series for the base model. Synthetic, no tenant data: the base model trained on it is shareable. The tenant and queue below are the template the samples replace.",
+  "seed": 1,
+  "duration_s": 604800,
+  "bin": "bin-a",
+  "tenants": [
+    {
+      "id": "acme",
+      "queues": [
+        {
+          "id": "q1",
+          "max_wait_s": 600,
+          "max_wait_action": {"action": "disconnect"},
+          "arrivals": {"kind": "poisson", "points": [{"t_s": 0, "per_hour": 60}], "overdispersion": 0.2, "bursts": {"per_hour": 0.5, "mean_size": 3}},
+          "handle_time": {"kind": "lognormal", "mean_s": 240, "cv": 0.8},
+          "patience": {"kind": "exponential", "mean_s": 120},
+          "redial": {"p": 0.2, "mean_delay_s": 120}
+        }
+      ],
+      "agents": [{"count": 1, "id_prefix": "fc-agent-", "queues": ["q1"]}]
+    }
+  ],
+  "expectations": {"invariants": "all"},
+  "forecast": {
+    "purpose": "training_catalogue",
+    "resolutions_s": [10, 60, 900],
+    "seeds": {"base": 1000, "samples": 360, "holdout": 40},
+    "patterns": {
+      "tenant": {"queues": [1, 6], "peak_per_hour": [6, 600]},
+      "days": [6, 7],
+      "start_day": [20454, 20818],
+      "day_level": {"quiet": {"weight": 0.2, "level": [0.45, 0.8]}, "normal": {"weight": 0.6, "level": [0.85, 1.15]}, "busy": {"weight": 0.2, "level": [1.2, 1.7]}},
+      "intraday": {"kinds": {"weekday": 0.35, "lunch_dip": 0.2, "end_of_day": 0.2, "flat": 0.1, "evening": 0.15},
+                   "open_h": [6, 9.5], "close_h": [16.5, 22], "night_level": [0.0, 0.12], "tz_offset_h": [-8, 3]},
+      "weekly": {"weekend_level": [0.05, 0.9]},
+      "holidays": {"per_sample": [0, 1], "level": [0.0, 0.35]},
+      "campaign_surge": {"per_week": [0, 2], "multiplier": [1.3, 2.5], "duration_h": [2, 8], "ramp_min": [10, 60]},
+      "spike": {"per_week": [0, 4], "multiplier": [3, 10], "duration_min": [3, 60], "ramp_s": [10, 600], "decay_s": [30, 1800], "min_gap_h": 6},
+      "outage": {"per_week": [0, 1], "duration_min": [5, 45], "level": [0.0, 0.3], "recovery_multiplier": [1.0, 2.0], "recovery_min": [10, 45]},
+      "shift_start": {"probability": 0.5, "multiplier": [1.1, 1.5], "duration_min": [10, 30]},
+      "trend": {"per_week": [-0.05, 0.08]},
+      "drift": {"level_step": {"probability": 0.2, "multiplier": [0.85, 1.2], "ramp_h": [0, 12]}, "aht_per_week": [-0.05, 0.05]},
+      "redial": {"p": [0.0, 0.5], "mean_delay_s": [30, 600]},
+      "overdispersion": {"cv": [0.0, 0.4]},
+      "bursts": {"per_hour": [0.0, 1.5], "mean_size": [2, 6]},
+      "handle_time": {"mean_s": [60, 600], "cv": [0.5, 1.2]},
+      "patience": {"mean_s": [30, 300]},
+      "staffing": {"occupancy": [0.75, 0.92], "factor": [0.8, 1.1]},
+      "quirks": {"dst": 0.2, "gap": {"per_week": [0, 3], "minutes": [1, 5]}, "duplicate": {"per_week": [0, 3], "minutes": [1, 2]}, "rename": 0.05, "merge": 0.05},
+      "flags": {"holiday_known": 0.5, "event_known": 0.5}
+    },
+    "leakage_bounds": {
+      "spike_multiplier": [3, 10],
+      "spike_gap_min": [360, 1000000],
+      "outage_minutes": [5, 45],
+      "level_step_multiplier": [0.85, 1.2],
+      "redial_p": [0, 0.5],
+      "bots_per_hour": [0, 0],
+      "gap_minutes": [1, 5],
+      "duplicate_minutes": [1, 2],
+      "clock_jump_s": [0, 0],
+      "merge_queues": [2, 2],
+      "drift_per_hour": [-0.0003, 0.0005],
+      "sawtooth_period_min": [0, 0],
+      "zero_traffic_minutes": [0, 45]
+    }
+  }
+}

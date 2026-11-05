@@ -1,0 +1,15 @@
+{
+  "description": "A removed number: a tombstone",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.state",
+    "key": "number:+15550100100",
+    "headers": {
+      "schema_version": "1",
+      "revision": "9"
+    },
+    "value": null
+  }
+}

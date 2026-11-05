@@ -1,0 +1,20 @@
+{
+  "description": "delete_placement",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.placement.requests",
+    "key": "acme",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "delete_placement",
+      "id": "rs:0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c:delete_placement:1",
+      "reply_to": "replies.parity-rs.eu1a",
+      "tenant_id": "acme"
+    }
+  }
+}

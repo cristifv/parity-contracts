@@ -1,0 +1,28 @@
+{
+  "description": "A Checkout URL that isn't Stripe's: the frontend never redirects there",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "apply",
+  "record": {
+    "topic": "replies.parity-frontend",
+    "key": "parity-frontend-1:create-signup-checkout-0003",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "parity-frontend-1:create-signup-checkout-0003",
+      "ok": true,
+      "result": {
+        "signup_id": "0192f6a1-e000-7aaa-8bbb-00000000a001",
+        "kind": "paid",
+        "url": "https://checkout.example.com/pay",
+        "expires_at_ms": 1792800000000
+      }
+    }
+  }
+}

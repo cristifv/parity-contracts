@@ -1,0 +1,156 @@
+{
+  "description": "One operator action (0.16.0): parity-cc-tools asks parity-rs to move a tenant; every record of the operation carries its op_id (and saga_id), as a call's carry its xsid.",
+  "kind": "log",
+  "writer_valid": true,
+  "violates": [],
+  "catalogues": [
+    "logging/examples/events.parity-cc-tools.v1.json",
+    "logging/examples/events.parity-rs.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-cc-tools",
+      "version": "0.1.0",
+      "instance": "cct-0",
+      "seq": 101,
+      "event": "action.requested",
+      "msg": "action requested",
+      "component": "parity.cctools.routing.Moves",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "tenant_id": "acme",
+      "request_id": "cct-0:0193a1b2-0000-7000-8000-000000000001",
+      "attrs": {
+        "action": "move_tenant",
+        "actor_sub": "5f0c2a9e-1b2c-4d3e-8f40-123456789abc"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.004Z",
+      "level": "info",
+      "service": "parity-rs",
+      "version": "0.2.0",
+      "instance": "rs-eu1a-0",
+      "seq": 101,
+      "event": "saga.accepted",
+      "msg": "saga accepted",
+      "component": "parity.rs.saga.Sagas",
+      "cause": "kafka:tenant.routing.ops.requests.eu1a",
+      "zone": "eu1a",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "tenant_id": "acme",
+      "attrs": {
+        "kind": "unit_move"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.006Z",
+      "level": "info",
+      "service": "parity-cc-tools",
+      "version": "0.1.0",
+      "instance": "cct-0",
+      "seq": 102,
+      "event": "action.answered",
+      "msg": "action answered",
+      "component": "parity.cctools.routing.Moves",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-11-01T10:00:00.012Z",
+      "level": "info",
+      "service": "parity-rs",
+      "version": "0.2.0",
+      "instance": "rs-eu1a-0",
+      "seq": 102,
+      "event": "assignment.written",
+      "msg": "assignment written",
+      "component": "parity.rs.exec.Assignments",
+      "zone": "eu1a",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "tenant_id": "acme",
+      "attrs": {
+        "unit": "bin-b",
+        "epoch": 7710
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.013Z",
+      "level": "info",
+      "service": "parity-rs",
+      "version": "0.2.0",
+      "instance": "rs-eu1a-0",
+      "seq": 103,
+      "event": "saga.state_changed",
+      "msg": "saga moved",
+      "component": "parity.rs.saga.Sagas",
+      "cause": "internal:etcd",
+      "from_state": "fencing",
+      "to_state": "switching",
+      "zone": "eu1a",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "tenant_id": "acme",
+      "attrs": {
+        "kind": "unit_move"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.053Z",
+      "level": "info",
+      "service": "parity-rs",
+      "version": "0.2.0",
+      "instance": "rs-eu1a-0",
+      "seq": 104,
+      "event": "placement.written",
+      "msg": "placement written",
+      "component": "parity.rs.store.StoreWriter",
+      "zone": "eu1a",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "tenant_id": "acme",
+      "attrs": {
+        "version": 8
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.055Z",
+      "level": "info",
+      "service": "parity-rs",
+      "version": "0.2.0",
+      "instance": "rs-eu1a-0",
+      "seq": 105,
+      "event": "saga.finished",
+      "msg": "saga finished",
+      "component": "parity.rs.saga.Sagas",
+      "cause": "kafka:replies.parity-rs.eu1a",
+      "zone": "eu1a",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "tenant_id": "acme",
+      "attrs": {
+        "kind": "unit_move",
+        "saga_outcome": "done"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.060Z",
+      "level": "info",
+      "service": "parity-cc-tools",
+      "version": "0.1.0",
+      "instance": "cct-0",
+      "seq": 103,
+      "event": "action.outcome",
+      "msg": "action outcome",
+      "component": "parity.cctools.routing.Progress",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "attrs": {
+        "saga_outcome": "done"
+      }
+    }
+  ]
+}

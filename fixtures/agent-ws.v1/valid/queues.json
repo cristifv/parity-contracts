@@ -1,0 +1,37 @@
+{
+  "description": "0.11.0: three queues now; moving to support after this call",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_desktop",
+  "frame": {
+    "v": 1,
+    "type": "queues",
+    "seq": 8,
+    "queues": [
+      {
+        "queue_id": "billing",
+        "tier": "primary",
+        "since_ms": 1792800000000
+      },
+      {
+        "queue_id": "sales",
+        "tier": "secondary",
+        "since_ms": 1792800000000
+      },
+      {
+        "queue_id": "support",
+        "tier": "secondary",
+        "pinned": true,
+        "since_ms": 1792800000000
+      }
+    ],
+    "pending_queues": [
+      {
+        "queue_id": "support",
+        "tier": "primary"
+      }
+    ],
+    "queues_version": 3,
+    "reason": "optimizer"
+  }
+}

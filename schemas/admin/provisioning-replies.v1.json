@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/provisioning-replies/v1.json",
+  "title": "admin-console provisioning answers, schema_version 1",
+  "description": "On replies.parity-billing, keyed like the request. get_provisioning answers not_found when there is no intent for the signup (billing then sends provision_tenant again).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "ok"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/result_tenant_id"
+        },
+        {
+          "$ref": "#/$defs/result_reservation"
+        },
+        {
+          "$ref": "#/$defs/result_release"
+        },
+        {
+          "$ref": "#/$defs/result_provisioning"
+        },
+        {
+          "$ref": "#/$defs/result_seat_usage"
+        },
+        {
+          "$ref": "#/$defs/result_invite"
+        }
+      ]
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "bad_request",
+            "forbidden",
+            "not_found",
+            "conflict",
+            "unavailable",
+            "internal"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "rule": {
+          "enum": [
+            "taken",
+            "not_reserved",
+            "held_by_other",
+            "rate_limited"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "if": {
+    "properties": {
+      "ok": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "result"
+    ],
+    "not": {
+      "required": [
+        "error"
+      ]
+    }
+  },
+  "else": {
+    "required": [
+      "error"
+    ],
+    "not": {
+      "required": [
+        "result"
+      ]
+    }
+  },
+  "unevaluatedProperties": false,
+  "$defs": {
+    "result_tenant_id": {
+      "type": "object",
+      "required": [
+        "tenant_id",
+        "available",
+        "reason"
+      ],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A requested tenant id: the tenant_id format, 3 to 40 characters"
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "taken",
+                "reserved",
+                "reserved_word",
+                "tombstoned"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_reservation": {
+      "type": "object",
+      "required": [
+        "tenant_id",
+        "holder",
+        "expires_at_ms"
+      ],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A requested tenant id: the tenant_id format, 3 to 40 characters"
+        },
+        "holder": {
+          "type": "string",
+          "pattern": "^(?:signup:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|onboarding:[A-Za-z0-9._:-]{1,120})$",
+          "description": "Who holds a reservation: a self-serve signup, or an operator's onboarding"
+        },
+        "expires_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_release": {
+      "type": "object",
+      "required": [
+        "tenant_id",
+        "released"
+      ],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A requested tenant id: the tenant_id format, 3 to 40 characters"
+        },
+        "released": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_provisioning": {
+      "type": "object",
+      "required": [
+        "signup_id",
+        "status",
+        "tenant_id",
+        "username",
+        "steps"
+      ],
+      "properties": {
+        "signup_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "status": {
+          "enum": [
+            "in_progress",
+            "created"
+          ]
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A requested tenant id: the tenant_id format, 3 to 40 characters"
+        },
+        "username": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,99}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The first admin's username (login with email is off); set when created"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "done"
+            ],
+            "properties": {
+              "name": {
+                "enum": [
+                  "put_tenant",
+                  "set_placement",
+                  "organization",
+                  "desktop_client",
+                  "first_admin",
+                  "required_actions",
+                  "default_config",
+                  "audit"
+                ]
+              },
+              "done": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_seat_usage": {
+      "type": "object",
+      "required": [
+        "tenant_id",
+        "day",
+        "enabled_now",
+        "max_enabled_in_day"
+      ],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "day": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "A UTC day, YYYY-MM-DD"
+        },
+        "enabled_now": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_enabled_in_day": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "FE-027: the most agents enabled at any time during the UTC day"
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_invite": {
+      "type": "object",
+      "required": [
+        "signup_id",
+        "sent",
+        "retry_after_ms"
+      ],
+      "properties": {
+        "signup_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "sent": {
+          "type": "boolean"
+        },
+        "retry_after_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/config-routing/v1.json",
+  "title": "config.routing: a tenant's routing policy (0.11.0; levers and VIP 0.12.0)",
+  "description": "One document per tenant on the compacted topic config.routing (key: the tenant_id), published by admin-console; parity-cc-routing reads it (its seed file until then). PLAN §4.3/§4.5 of parity-cc-routing. A document older than the one held, or naming a queue the tenant doesn't have, is refused whole and counted. Pins are separate documents (config.routing_pin).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "version",
+    "mode"
+  ],
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Rises with every change; RE keeps the newest"
+    },
+    "mode": {
+      "enum": [
+        "off",
+        "advise",
+        "auto"
+      ],
+      "description": "off: phase 4's behaviour (configured sets, config weights and delays); advise: the optimizer only recommends (parity.staffing); auto: the levers apply by themselves: (a) each queue's dispatch weight and secondary delay within their bounds, (b) min_agents/max_agents in the dispatch. No mode moves agents between queues automatically (0.12.0); approvals of recommendations become pins"
+    },
+    "dwell_min_s": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 3600,
+      "description": "D_min: an agent stays on a primary at least this long before the optimizer moves it again (default 300)"
+    },
+    "max_moves_per_hour": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 12,
+      "description": "Per agent, rolling hour (default 4)"
+    },
+    "reject_skip_s": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 300,
+      "description": "How long a reject skips the agent for that call while another eligible agent is ready (default 30)"
+    },
+    "queues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "queue_id"
+        ],
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+          },
+          "alpha": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "The optimizer's weight on missed service level (default 1)"
+          },
+          "beta": {
+            "type": "number",
+            "minimum": 0,
+            "description": "The optimizer's weight on abandonment (default 1)"
+          },
+          "min_agents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lever (b), auto mode: while fewer agents than this are busy on the queue (offered, reserved, on a call or in wrap-up), an agent at its next READY takes this queue's call before other normal calls (0.12.0; it was a primaries floor in 0.11.0); 0: none"
+          },
+          "max_agents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lever (b), auto mode: with this many agents busy on the queue, an agent at its next READY takes its call only when it has no other (it never idles past a delay: the bounded wait stands); 0: no ceiling"
+          },
+          "secondary_delay_s": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 300,
+            "description": "d_i's default: secondaries take a call after it waited this long (default 10); in auto the optimizer moves it within delay_min_s..delay_max_s"
+          },
+          "escalate_after_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400,
+            "description": "After this, any eligible agent may take the call (default 3 x the queue's service-level threshold)"
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0.25,
+            "maximum": 4,
+            "description": "0.12.0, lever (a): the queue's dispatch weight w (an agent takes the highest w x age / tau); default 1; in auto the optimizer moves it within weight_min..weight_max"
+          },
+          "weight_min": {
+            "type": "number",
+            "minimum": 0.25,
+            "maximum": 4,
+            "description": "0.12.0: lever (a)'s lower bound (default 0.25)"
+          },
+          "weight_max": {
+            "type": "number",
+            "minimum": 0.25,
+            "maximum": 4,
+            "description": "0.12.0: lever (a)'s upper bound (default 4)"
+          },
+          "delay_min_s": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 300,
+            "description": "0.12.0: lever (a)'s lower bound on the secondary delay (default 0)"
+          },
+          "delay_max_s": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 300,
+            "description": "0.12.0: lever (a)'s upper bound on the secondary delay (default max(60, secondary_delay_s))"
+          },
+          "sl_target": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1,
+            "description": "0.12.0, lever (c): staffing recommendations ask for agents while the predicted service level is below this (default 0.8)"
+          },
+          "vip_sla_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600,
+            "description": "0.12.0: the VIP class's service-level threshold (default: the queue's)"
+          },
+          "vip_alpha": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "0.12.0: the optimizer's weight on the VIP class's missed service level (default 2)"
+          },
+          "vip_beta": {
+            "type": "number",
+            "minimum": 0,
+            "description": "0.12.0: the optimizer's weight on the VIP class's abandonment (default 2)"
+          },
+          "vip_reserved_min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "0.12.0: VIP-eligible agents (vip_skill) kept READY for VIP callers: while no more than this many are READY for the queue, its normal calls reach them only past the secondary delay; 0: none"
+          }
+        }
+      }
+    },
+    "vip_skill": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+      "description": "0.12.0: agents holding this skill are VIP-eligible (a queue's vip_reserved_min keeps that many of them READY for VIP callers). Absent: no reserve"
+    },
+    "proficiency_speed": {
+      "type": "array",
+      "maxItems": 16,
+      "description": "0.12.0: configured proficiency -> relative speed for the model (an agent's speed on a queue is the last step its level in the queue's skills reaches; never measured per person). Absent: every agent at speed 1",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "min_level",
+          "speed"
+        ],
+        "properties": {
+          "min_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0.25,
+            "maximum": 4
+          }
+        }
+      }
+    }
+  }
+}

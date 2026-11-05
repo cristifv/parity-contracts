@@ -1,0 +1,22 @@
+{
+  "description": "An unknown command: bad_request",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "billing.web.requests",
+    "key": "parity-frontend-1:get-catalog-0001",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "grant_credit",
+      "id": "parity-frontend-1:get-catalog-0001",
+      "reply_to": "replies.parity-frontend"
+    }
+  }
+}

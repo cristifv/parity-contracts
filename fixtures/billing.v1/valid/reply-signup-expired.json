@@ -1,0 +1,24 @@
+{
+  "description": "An expired signup: not_found",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.parity-frontend",
+    "key": "parity-frontend-1:get-signup-status-0003",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "parity-frontend-1:get-signup-status-0003",
+      "ok": false,
+      "error": {
+        "code": "not_found",
+        "message": "this signup has expired",
+        "rule": "expired"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "description": "A plain-text line (a framework's banner or a println).",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "not_json"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-gateway.v1.json"
+  ],
+  "line_text": "2026-11-01 10:00:00 INFO  starting parity-gateway"
+}

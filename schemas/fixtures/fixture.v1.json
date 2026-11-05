@@ -1,0 +1,2502 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/fixture/v1.json",
+  "title": "A parity-contracts golden fixture",
+  "description": "A whole Kafka record or a gRPC script. Header and key rules beyond structure are checked by contract-check (CONVENTIONS.md). Since 0.4.0 also a tenant maps file (kind tenant_maps), checked against schemas/tenants/tenant-maps.v1.json and the rules of CONVENTIONS.md's \"Tenant maps\". Since 0.5.0 also a parity-store record (kind store), checked against schemas/store/ and CONVENTIONS.md's \"parity-store API\". Since 0.10.0 also a parity-billing record (kind billing), checked against schemas/billing/, schemas/admin/ and CONVENTIONS.md's \"Billing API\", \"Entitlements\" and \"Provisioning\". Since 0.13.0 also log lines (kind log), checked against schemas/logging/log-record.v1.json, the catalogues named and CONVENTIONS.md's \"Logging (log-record.v1)\". Since 0.16.0 also a parity-rs tenant routing record (kind routing_ops), checked against schemas/tenant-routing/ and CONVENTIONS.md's \"Tenant routing API\".",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/kafka"
+    },
+    {
+      "$ref": "#/$defs/grpc"
+    },
+    {
+      "$ref": "#/$defs/ws"
+    },
+    {
+      "$ref": "#/$defs/tenant_maps"
+    },
+    {
+      "$ref": "#/$defs/store"
+    },
+    {
+      "$ref": "#/$defs/billing"
+    },
+    {
+      "$ref": "#/$defs/log"
+    },
+    {
+      "$ref": "#/$defs/routing_ops"
+    }
+  ],
+  "$defs": {
+    "kafka": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "violates",
+        "reader",
+        "record"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "kafka"
+        },
+        "writer_valid": {
+          "type": "boolean"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(schema|key_mismatch|bad_reply_to|unknown_schema_version|alias_mismatch|missing_header:[a-z_]+|header_body_mismatch:[a-z_]+)$"
+          }
+        },
+        "reader": {
+          "type": "string",
+          "pattern": "^(apply|ignore|reject|dlt|reply_error:[a-z_]+)$"
+        },
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "topic",
+            "key",
+            "headers"
+          ],
+          "properties": {
+            "topic": {
+              "type": "string",
+              "pattern": "^(interaction\\.events|interaction\\.commands|replies\\.[a-z0-9][a-z0-9.-]{0,200})$"
+            },
+            "key": {
+              "type": "string"
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "value": {},
+            "value_text": {
+              "type": "string"
+            }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "value"
+              ]
+            },
+            {
+              "required": [
+                "value_text"
+              ]
+            }
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "writer_valid": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violates": {
+            "maxItems": 0
+          },
+          "record": {
+            "properties": {
+              "headers": {
+                "required": [
+                  "tenant_id",
+                  "interaction_id",
+                  "schema_version",
+                  "traceparent"
+                ]
+              }
+            },
+            "required": [
+              "value"
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violates": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "grpc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "steps"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "grpc"
+        },
+        "writer_valid": {
+          "type": "boolean",
+          "description": "false: the last call breaks the gRPC rules in violates (telephony.v1, and routing.v1 since G5)"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "tenant_mismatch",
+              "missing_owner",
+              "bad_epoch",
+              "bad_command_id",
+              "bad_uuid",
+              "bad_sip_status"
+            ]
+          }
+        },
+        "package": {
+          "enum": [
+            "parity.routing.v1",
+            "parity.telephony.v1",
+            "parity.agents.v1",
+            "parity.interaction.v1"
+          ],
+          "description": "Absent: parity.routing.v1 (0.1.0 scripts)"
+        },
+        "pins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "streams": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "replica_id",
+              "bin"
+            ],
+            "properties": {
+              "replica_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "bin": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "peers": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9.-]{0,127}$"
+          }
+        },
+        "given": {
+          "type": "object",
+          "description": "Initial state: parity.telephony.v1's and (G5) parity.routing.v1's are fixed below; a routing.v1 script with given is executable"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "writer_valid": {
+                "const": false
+              }
+            },
+            "required": [
+              "writer_valid"
+            ]
+          },
+          "then": {
+            "required": [
+              "violates",
+              "package"
+            ],
+            "properties": {
+              "violates": {
+                "minItems": 1
+              },
+              "package": {
+                "enum": [
+                  "parity.telephony.v1",
+                  "parity.routing.v1"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "violates": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "package": {
+                "const": "parity.telephony.v1"
+              }
+            },
+            "required": [
+              "package"
+            ]
+          },
+          "then": {
+            "required": [
+              "streams",
+              "given"
+            ],
+            "properties": {
+              "given": {
+                "$ref": "#/$defs/telephony_given"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "package": {
+                "const": "parity.routing.v1"
+              }
+            },
+            "required": [
+              "package",
+              "given"
+            ]
+          },
+          "then": {
+            "required": [
+              "streams"
+            ],
+            "properties": {
+              "given": {
+                "$ref": "#/$defs/routing_given"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "step": {
+      "type": "object",
+      "required": [
+        "op"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "call",
+            "deliver",
+            "advance",
+            "inject"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "method",
+            "message",
+            "body",
+            "expect"
+          ],
+          "properties": {
+            "op": {
+              "const": "call"
+            },
+            "note": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string",
+              "pattern": "^parity\\.(routing|telephony|agents|interaction)\\.v1\\.[A-Za-z]+Service/[A-Za-z]+$"
+            },
+            "message": {
+              "type": "string",
+              "pattern": "^parity\\.(routing|telephony|agents|interaction)\\.v1\\.[A-Za-z]+$"
+            },
+            "metadata": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "body": {
+              "type": "object"
+            },
+            "expect": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "message",
+                    "body"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "pattern": "^parity\\.(routing|telephony|agents|interaction)\\.v1\\.[A-Za-z]+$"
+                    },
+                    "body": {
+                      "type": "object"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "status",
+                    "parity_error"
+                  ],
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "ABORTED",
+                        "NOT_FOUND",
+                        "INVALID_ARGUMENT",
+                        "FAILED_PRECONDITION",
+                        "ALREADY_EXISTS",
+                        "RESOURCE_EXHAUSTED",
+                        "UNAVAILABLE",
+                        "DEADLINE_EXCEEDED",
+                        "INTERNAL",
+                        "PERMISSION_DENIED"
+                      ]
+                    },
+                    "parity_error": {
+                      "type": "string",
+                      "pattern": "^[a-z_]+$"
+                    }
+                  }
+                }
+              ]
+            },
+            "stream": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+            },
+            "peer": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "message",
+            "body"
+          ],
+          "properties": {
+            "op": {
+              "const": "deliver"
+            },
+            "note": {
+              "type": "string"
+            },
+            "message": {
+              "enum": [
+                "parity.routing.v1.WatchResponse",
+                "parity.telephony.v1.WatchResponse",
+                "parity.agents.v1.WatchResponse"
+              ]
+            },
+            "body": {
+              "type": "object"
+            },
+            "stream": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "ms"
+          ],
+          "properties": {
+            "op": {
+              "const": "advance"
+            },
+            "note": {
+              "type": "string"
+            },
+            "ms": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,18})$"
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "what",
+            "args"
+          ],
+          "properties": {
+            "op": {
+              "const": "inject"
+            },
+            "note": {
+              "type": "string"
+            },
+            "what": {
+              "enum": [
+                "arrival",
+                "leg_ring",
+                "leg_answer",
+                "caller_cancel",
+                "media_inactive",
+                "media_active",
+                "reinvite_address",
+                "reinvite_codec",
+                "leg_fail",
+                "leg_hangup",
+                "dtmf",
+                "reinvite_hold",
+                "dtmf_action_match",
+                "play_done",
+                "prompt_missing",
+                "stream_drop",
+                "tc_restart",
+                "tc_crash_mid_fence_raise",
+                "owner_claim",
+                "owner_delete",
+                "capacity",
+                "etcd_down",
+                "etcd_up",
+                "freeswitch_unreachable",
+                "freeswitch_reachable",
+                "freeswitch_lost",
+                "parity_ms_unreachable",
+                "parity_ms_reachable",
+                "parity_ms_lost",
+                "drain",
+                "mailbox_full",
+                "mailbox_free",
+                "queue_call",
+                "call_ended",
+                "agent_ready",
+                "agent_answers",
+                "call_connected",
+                "supervisor_force",
+                "config_routing",
+                "config_routing_pin",
+                "moves"
+              ]
+            },
+            "args": {
+              "type": "object"
+            }
+          },
+          "oneOf": [
+            {
+              "properties": {
+                "what": {
+                  "const": "arrival"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id",
+                    "interaction_id",
+                    "tenant_id",
+                    "bin",
+                    "called_number",
+                    "sip_call_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "interaction_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "bin": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "called_number": {
+                      "type": "string",
+                      "pattern": "^\\+[1-9][0-9]{6,14}$"
+                    },
+                    "caller_number": {
+                      "type": "string",
+                      "pattern": "^\\+[1-9][0-9]{6,14}$"
+                    },
+                    "sip_call_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "trunk_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "headers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "name",
+                          "value"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "leg_ring"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "leg_answer"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "caller_cancel"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "media_inactive"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "media_active"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "reinvite_address"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "reinvite_codec"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "leg_fail"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id",
+                    "cause",
+                    "sip_status"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "cause": {
+                      "type": "string",
+                      "pattern": "^END_CAUSE_[A-Z_]+$"
+                    },
+                    "sip_status": {
+                      "type": "integer",
+                      "minimum": 300,
+                      "maximum": 699
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "leg_hangup"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "cause": {
+                      "type": "string",
+                      "pattern": "^END_CAUSE_[A-Z_]+$"
+                    },
+                    "sip_status": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 699
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "dtmf"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id",
+                    "digit"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "digit": {
+                      "type": "string",
+                      "pattern": "^[0-9*#A-D]$"
+                    },
+                    "source": {
+                      "enum": [
+                        "DIGIT_SOURCE_RFC4733",
+                        "DIGIT_SOURCE_INBAND"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "reinvite_hold"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id",
+                    "on"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "on": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "dtmf_action_match"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id",
+                    "action",
+                    "result"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "action": {
+                      "type": "string",
+                      "pattern": "^DTMF_ACTION_KIND_[A-Z_]+$"
+                    },
+                    "result": {
+                      "type": "string",
+                      "pattern": "^DTMF_ACTION_RESULT_[A-Z_]+$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "play_done"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "leg_id",
+                    "reason"
+                  ],
+                  "properties": {
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "reason": {
+                      "enum": [
+                        "completed",
+                        "stopped",
+                        "replaced",
+                        "failed"
+                      ]
+                    },
+                    "played_ms": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "prompt_missing"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "prompt_id"
+                  ],
+                  "properties": {
+                    "prompt_id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "stream_drop"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "stream"
+                  ],
+                  "properties": {
+                    "stream": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "tc_restart"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "incarnation",
+                    "rebuild_ms"
+                  ],
+                  "properties": {
+                    "incarnation": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "rebuild_ms": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,18})$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "tc_crash_mid_fence_raise"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "claim",
+                    "after_legs",
+                    "incarnation",
+                    "rebuild_ms"
+                  ],
+                  "properties": {
+                    "claim": {
+                      "type": "object",
+                      "description": "A SessionOwner, as JSON"
+                    },
+                    "after_legs": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "incarnation": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "rebuild_ms": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,18})$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "owner_claim"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "interaction_id",
+                    "owner_epoch",
+                    "tenant_id",
+                    "bin",
+                    "replica_id",
+                    "node_id"
+                  ],
+                  "properties": {
+                    "interaction_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "owner_epoch": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,18})$"
+                    },
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "bin": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "replica_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "node_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "owner_delete"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "interaction_id"
+                  ],
+                  "properties": {
+                    "interaction_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "capacity"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "free_legs"
+                  ],
+                  "properties": {
+                    "free_legs": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "etcd_down"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "etcd_up"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "freeswitch_unreachable"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "freeswitch_reachable"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "freeswitch_lost"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "parity_ms_unreachable"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "parity_ms_reachable"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "parity_ms_lost"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "drain"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "mailbox_full"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "interaction_id"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "interaction_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "mailbox_free"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "interaction_id"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "interaction_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "queue_call"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "interaction_id",
+                    "queue_id"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "interaction_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "queue_id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                    },
+                    "priority": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100,
+                      "description": "0.11.0: the call's priority (0: the queue's default)"
+                    }
+                  }
+                }
+              },
+              "description": "parity.agents.v1: a call joins the queue (RE offers it)"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "call_ended"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "reservation_id"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "reservation_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              },
+              "description": "parity.agents.v1: IE's CallEnded for a reservation (wrap-up starts)"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "agent_ready"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "agent_id"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "agent_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  }
+                }
+              },
+              "description": "parity.routing.v1 (G5): the agent becomes ready now (agents.v1 SetState)"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "agent_answers"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "agent_id",
+                    "decision",
+                    "result"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "agent_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "decision": {
+                      "enum": [
+                        "DECISION_ACCEPT",
+                        "DECISION_REJECT"
+                      ]
+                    },
+                    "result": {
+                      "enum": [
+                        "accepted",
+                        "rejected",
+                        "offer_gone",
+                        "no_offer"
+                      ]
+                    }
+                  }
+                }
+              },
+              "description": "parity.routing.v1 (G5): the agent answers its latest offer (agents.v1 AnswerOffer); result is what it must get, no_offer when it was never offered this script's calls"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "call_connected"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "reservation_id"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "reservation_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    }
+                  }
+                }
+              },
+              "description": "0.11.0 (agents.v1 scripts): the stand-in IE reports CONNECTED for the reservation"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "supervisor_force"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "agent_id",
+                    "target"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "agent_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "target": {
+                      "enum": [
+                        "TARGET_STATE_NOT_READY",
+                        "TARGET_STATE_LOGGED_OUT"
+                      ]
+                    },
+                    "reason_code": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                    },
+                    "supervisor_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  }
+                }
+              },
+              "description": "0.11.0: a supervisor's forced state, which the harness performs through agents.v1 ForceState"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "config_routing"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "doc"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "doc": {
+                      "type": "object",
+                      "description": "A config.routing document (schemas/config/config-routing.v1.json)"
+                    },
+                    "expect": {
+                      "type": "object",
+                      "description": "0.11.0: what RE must make of the stimulus (a subset of the harness's answer: applied, pending, silent, refused, why)"
+                    }
+                  }
+                }
+              },
+              "description": "0.11.0: a config.routing record as the config reader applies it; key (default: the doc's tenant) is the record's key"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "config_routing_pin"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "doc"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 257
+                    },
+                    "doc": {
+                      "type": "object",
+                      "description": "A config.routing_pin document (schemas/config/config-routing-pin.v1.json); {\"tombstone\": true} stands for the Kafka tombstone"
+                    },
+                    "expect": {
+                      "type": "object",
+                      "description": "0.11.0: what RE must make of the stimulus (a subset of the harness's answer: applied, pending, silent, refused, why)"
+                    }
+                  }
+                }
+              },
+              "description": "0.11.0: a config.routing_pin record; key (default {tenant}/{agent_id})"
+            },
+            {
+              "properties": {
+                "what": {
+                  "const": "moves"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tenant_id",
+                    "moves"
+                  ],
+                  "properties": {
+                    "tenant_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "moves": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "agent_id",
+                          "queues"
+                        ],
+                        "properties": {
+                          "agent_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "queues": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "queue_id",
+                                "tier"
+                              ],
+                              "properties": {
+                                "queue_id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                                },
+                                "tier": {
+                                  "enum": [
+                                    "MEMBERSHIP_TIER_PRIMARY",
+                                    "MEMBERSHIP_TIER_SECONDARY"
+                                  ]
+                                },
+                                "weight": {
+                                  "type": "number",
+                                  "minimum": 0.25,
+                                  "maximum": 4
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "expect": {
+                      "type": "object",
+                      "description": "0.11.0: what RE must make of the stimulus (a subset of the harness's answer: applied, pending, silent, refused, why)"
+                    }
+                  }
+                }
+              },
+              "description": "0.11.0 (CR-016): what an optimizer decided, in contract terms; RE re-checks each move (CR-021)"
+            }
+          ]
+        }
+      ]
+    },
+    "telephony_given": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start_ms",
+        "incarnation",
+        "node_id",
+        "version",
+        "bins",
+        "replicas"
+      ],
+      "properties": {
+        "start_ms": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "incarnation": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "node_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "bins": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "uniqueItems": true
+        },
+        "replicas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "bin",
+              "replica_id"
+            ],
+            "properties": {
+              "bin": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "replica_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "owners": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "interaction_id",
+              "owner_epoch",
+              "tenant_id",
+              "bin",
+              "replica_id",
+              "node_id"
+            ],
+            "properties": {
+              "interaction_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "owner_epoch": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              },
+              "tenant_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "bin": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "replica_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "node_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "free_legs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ws": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "direction",
+        "frame"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "ws"
+        },
+        "writer_valid": {
+          "type": "boolean"
+        },
+        "direction": {
+          "enum": [
+            "to_gateway",
+            "to_desktop"
+          ],
+          "description": "agent-ws.v1: schemas/agent-ws/to-gateway.v1.json or to-desktop.v1.json"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "const": "schema"
+          }
+        },
+        "frame": {
+          "type": "object"
+        }
+      },
+      "if": {
+        "properties": {
+          "writer_valid": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "violates"
+        ],
+        "properties": {
+          "violates": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violates": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    "tenant_maps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "file"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "tenant_maps"
+        },
+        "writer_valid": {
+          "type": "boolean",
+          "description": "true: a valid tenant maps file; false: it breaks exactly the rules in violates"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "schema",
+              "duplicate_tenant",
+              "missing_tier",
+              "unknown_parent",
+              "nested_sub_tenant",
+              "parent_not_enterprise",
+              "tier_mismatch",
+              "parent_takes_traffic",
+              "missing_placement",
+              "duplicate_number",
+              "duplicate_sip_domain",
+              "test_unknown_tenant",
+              "duplicate_agent",
+              "test_number_not_fictional",
+              "test_domain_not_reserved"
+            ]
+          }
+        },
+        "at": {
+          "type": "string",
+          "pattern": "^(/[^/]*)*$",
+          "description": "A JSON pointer into file that one of the violations must name"
+        },
+        "file": {
+          "description": "The tenant maps file, as parity-store would read it"
+        }
+      },
+      "if": {
+        "properties": {
+          "writer_valid": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "violates"
+        ],
+        "properties": {
+          "violates": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violates": {
+            "maxItems": 0
+          }
+        },
+        "not": {
+          "required": [
+            "at"
+          ]
+        }
+      }
+    },
+    "store": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "reader",
+        "record"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "store"
+        },
+        "writer_valid": {
+          "type": "boolean"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "schema",
+              "bad_id",
+              "bad_reply_to",
+              "admin_only",
+              "key_mismatch",
+              "header_body_mismatch",
+              "missing_header",
+              "placement_only",
+              "placement_via_parity_rs"
+            ]
+          }
+        },
+        "reader": {
+          "enum": [
+            "apply",
+            "dlt",
+            "reply_error:bad_request",
+            "reply_error:forbidden",
+            "reject"
+          ],
+          "description": "What a correct reader does (parity-store for requests; a consumer for the rest)"
+        },
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "topic",
+            "key",
+            "headers"
+          ],
+          "properties": {
+            "topic": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "description": "The JSON body; absent: not JSON; null: a tombstone (tenant.store.state)"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "writer_valid": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "violates"
+        ],
+        "properties": {
+          "violates": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violates": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    "routing_given": {
+      "description": "G5: the world an executable routing.v1 script starts from (CONVENTIONS.md \"Executable routing scripts\")",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start_ms",
+        "leader_epoch",
+        "bin",
+        "tenants",
+        "queues",
+        "agents",
+        "offer_timeout_ms",
+        "assignment_deadline_ms"
+      ],
+      "properties": {
+        "start_ms": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,18})$",
+          "description": "The virtual clock's start, epoch ms"
+        },
+        "leader_epoch": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "bin": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "tenants": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "description": "The bin's tenants"
+        },
+        "queues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tenant_id",
+              "queue_id"
+            ],
+            "properties": {
+              "tenant_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "queue_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "max_wait_ms": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,9}$",
+                "description": "0.9.0: the queue's max wait (default: 1 h, longer than any script)"
+              },
+              "max_wait_action": {
+                "enum": [
+                  "OVERFLOW_ACTION_QUEUE",
+                  "OVERFLOW_ACTION_VOICEMAIL",
+                  "OVERFLOW_ACTION_CALLBACK_OFFER",
+                  "OVERFLOW_ACTION_DISCONNECT",
+                  "OVERFLOW_ACTION_FLOW_STEP"
+                ],
+                "description": "0.9.0: what max_wait_ms does (default DISCONNECT); QUEUE names max_wait_queue_id, FLOW_STEP max_wait_flow_step; 0.11.0: CALLBACK_OFFER (L15)"
+              },
+              "max_wait_queue_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "max_wait_flow_step": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tenant_id",
+              "agent_id",
+              "agent_contact",
+              "queues"
+            ],
+            "properties": {
+              "tenant_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "agent_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "agent_contact": {
+                "type": "string",
+                "pattern": "^sips?:[^\\s]{1,256}$"
+              },
+              "queues": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                }
+              },
+              "ready_since_ms": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "description": "Attached and ready since then; absent: not ready"
+              },
+              "skills": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                },
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "description": "0.11.0: the agent's skills and levels (entries' requirements)"
+              }
+            }
+          }
+        },
+        "owner_loss_ms": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,9}$",
+          "description": "0.9.1: the owner-loss cleanup (CR-083); absent: beyond any script's horizon"
+        },
+        "offer_timeout_ms": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "assignment_deadline_ms": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,18})$",
+          "description": "Assigned.deadline_ms = the accept's time + this"
+        },
+        "routing": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "0.11.0: the tenants' config.routing documents at the start"
+        },
+        "routing_pins": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "0.11.0: config.routing_pin documents at the start"
+        },
+        "direct_max_wait_ms": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,9}$",
+          "description": "0.11.0: a direct offer's max wait (default 60 s, then VOICEMAIL)"
+        },
+        "callback_deadline_ms": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,9}$",
+          "description": "0.11.0: RunCallback.deadline_ms = the agent's accept + this (default 120 s)"
+        },
+        "reject_skip_ms": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,9}$",
+          "description": "0.11.0: how long a reject skips the agent (default 30 s)"
+        }
+      }
+    },
+    "billing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "reader",
+        "record"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "billing"
+        },
+        "writer_valid": {
+          "type": "boolean"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "schema",
+              "bad_id",
+              "bad_reply_to",
+              "reply_to_not_allowed",
+              "wrong_topic",
+              "key_mismatch",
+              "header_body_mismatch",
+              "missing_header"
+            ]
+          }
+        },
+        "reader": {
+          "enum": [
+            "apply",
+            "dlt",
+            "reply_error:bad_request",
+            "reply_error:forbidden",
+            "reject"
+          ],
+          "description": "What a correct reader does (parity-billing or admin-console for requests; a consumer for the rest)"
+        },
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "topic",
+            "key",
+            "headers"
+          ],
+          "properties": {
+            "topic": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "description": "The JSON body; absent: not JSON; null: a tombstone (billing.entitlements)"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "writer_valid": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "violates"
+        ],
+        "properties": {
+          "violates": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violates": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    "log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "violates",
+        "catalogues"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "log"
+        },
+        "writer_valid": {
+          "type": "boolean"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "not_json",
+              "line_too_long",
+              "schema",
+              "bad_xsid",
+              "missing_xsid",
+              "xsid_mismatch",
+              "missing_correlation",
+              "missing_attr",
+              "unknown_service",
+              "unknown_event",
+              "level_not_allowed",
+              "transition_incomplete",
+              "decision_too_large",
+              "decision_level",
+              "stack_level",
+              "unmasked_phone",
+              "unmasked_secret",
+              "unmasked_email",
+              "seq_repeat"
+            ]
+          }
+        },
+        "catalogues": {
+          "description": "Service catalogues (paths from the repository root); logging/events.common.v1.json always applies",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^logging/[A-Za-z0-9._/-]+\\.json$"
+          }
+        },
+        "records": {
+          "description": "The lines, as objects (each written compactly is one NDJSON line)",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        },
+        "line_text": {
+          "description": "One raw line, for what isn't a JSON object",
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "records"
+          ]
+        },
+        {
+          "required": [
+            "line_text"
+          ]
+        }
+      ],
+      "if": {
+        "properties": {
+          "writer_valid": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violates": {
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "records"
+        ]
+      },
+      "else": {
+        "properties": {
+          "violates": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "routing_ops": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "kind",
+        "writer_valid",
+        "reader",
+        "record"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "const": "routing_ops"
+        },
+        "writer_valid": {
+          "type": "boolean"
+        },
+        "violates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "schema",
+              "bad_id",
+              "bad_reply_to",
+              "wrong_topic",
+              "key_mismatch",
+              "header_body_mismatch",
+              "missing_header"
+            ]
+          }
+        },
+        "reader": {
+          "enum": [
+            "apply",
+            "dlt",
+            "reply_error:bad_request",
+            "reply_error:forbidden",
+            "reject"
+          ],
+          "description": "What a correct reader does (parity-rs for requests and handover reports; a consumer for events and answers)"
+        },
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "topic",
+            "key",
+            "headers"
+          ],
+          "properties": {
+            "topic": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "description": "The JSON body; absent: not JSON"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "writer_valid": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "violates"
+        ],
+        "properties": {
+          "violates": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violates": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  }
+}

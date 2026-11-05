@@ -1,0 +1,93 @@
+{
+  "description": "parity-ms: one record per leg start and end (stats), never per packet; a deduplicated thread overrun; dropped log records.",
+  "kind": "log",
+  "writer_valid": true,
+  "violates": [],
+  "catalogues": [
+    "logging/examples/events.parity-ms.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-ms",
+      "version": "0.9.0",
+      "instance": "ms-media-1",
+      "incarnation": "ms-boot-19",
+      "seq": 101,
+      "event": "leg.started",
+      "msg": "leg media started",
+      "component": "parity_ms::leg",
+      "leg_id": "6f1c2a9e-0000-4000-8000-000000000001",
+      "node": "media-1",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "attrs": {
+        "codec": "PCMU",
+        "mode": "passthrough"
+      },
+      "code": {
+        "file": "src/leg/mod.rs",
+        "line": 140
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:05.000Z",
+      "level": "warn",
+      "service": "parity-ms",
+      "version": "0.9.0",
+      "instance": "ms-media-1",
+      "incarnation": "ms-boot-19",
+      "seq": 102,
+      "event": "thread.overrun",
+      "msg": "media thread overran its cycle",
+      "component": "parity_ms::cycle",
+      "repeat_count": 3,
+      "repeat_since": "2026-11-01T10:00:04.200Z",
+      "attrs": {
+        "thread_name": "rtp-2",
+        "overrun_us": 850
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:05.001Z",
+      "level": "warn",
+      "service": "parity-ms",
+      "version": "0.9.0",
+      "instance": "ms-media-1",
+      "incarnation": "ms-boot-19",
+      "seq": 103,
+      "event": "log.dropped",
+      "msg": "log records dropped",
+      "component": "parity_ms::logging",
+      "attrs": {
+        "dropped": 12
+      }
+    },
+    {
+      "ts": "2026-11-01T10:03:09.001Z",
+      "level": "info",
+      "service": "parity-ms",
+      "version": "0.9.0",
+      "instance": "ms-media-1",
+      "incarnation": "ms-boot-19",
+      "seq": 104,
+      "event": "leg.stats",
+      "msg": "leg media summary",
+      "component": "parity_ms::leg",
+      "leg_id": "6f1c2a9e-0000-4000-8000-000000000001",
+      "node": "media-1",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "attrs": {
+        "packets_in": 9420,
+        "packets_out": 9418,
+        "loss_pct": 0.1,
+        "jitter_ms": 3.2,
+        "duration_s": 188
+      }
+    }
+  ]
+}

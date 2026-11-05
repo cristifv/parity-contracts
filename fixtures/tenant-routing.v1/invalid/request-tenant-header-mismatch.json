@@ -1,0 +1,25 @@
+{
+  "description": "The tenant_id header names another tenant: bad_request",
+  "kind": "routing_ops",
+  "writer_valid": false,
+  "violates": [
+    "header_body_mismatch"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "tenant.routing.requests.eu1a",
+    "key": "acme",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "globex"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "get_route",
+      "id": "cct-1:get_route-0001",
+      "reply_to": "replies.parity-cc-tools",
+      "tenant_id": "acme"
+    }
+  }
+}

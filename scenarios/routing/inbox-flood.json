@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "name": "inbox-flood",
+  "description": "Variant (CR-055): 3,000 callers' Enqueues at the same instant while the engine's writer for the tenant is stalled: the per-tenant inbox share refuses the excess UNAVAILABLE (IE retries with backoff), the queue's 500 places refuse the rest queue_full, nothing is lost",
+  "seed": 14,
+  "duration_s": 900,
+  "bin": "bin-a",
+  "tenants": [
+    {
+      "id": "acme",
+      "queues": [
+        {
+          "id": "sales",
+          "max_wait_s": 600,
+          "max_wait_action": {
+            "action": "disconnect"
+          },
+          "max_entries": 500,
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 60
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "fixed",
+            "s": 60
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 300
+          }
+        }
+      ],
+      "agents": [
+        {
+          "count": 3,
+          "ids": [
+            "agent-a1",
+            "agent-a2",
+            "agent-a3"
+          ],
+          "queues": [
+            "sales"
+          ],
+          "site": "site-a"
+        }
+      ],
+      "behaviour": {
+        "answer_delay": {
+          "kind": "fixed",
+          "s": 2
+        },
+        "wrap_up": {
+          "kind": "fixed",
+          "s": 10
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "at_s": 120,
+      "kind": "request_flood",
+      "tenant": "acme",
+      "queue": "sales",
+      "count": 3000,
+      "stall": true
+    }
+  ],
+  "expectations": {
+    "invariants": "all",
+    "rss_mib_max": 768,
+    "must_occur": [
+      "request_refused_unavailable",
+      "queue_full"
+    ]
+  }
+}

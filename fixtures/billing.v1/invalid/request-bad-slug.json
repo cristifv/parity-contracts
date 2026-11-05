@@ -1,0 +1,23 @@
+{
+  "description": "A slug that isn't a DNS label: bad_request",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "billing.web.requests",
+    "key": "parity-frontend-1:check-slug-0001",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "check_slug",
+      "id": "parity-frontend-1:check-slug-0001",
+      "reply_to": "replies.parity-frontend",
+      "slug": "Acme_Ltd"
+    }
+  }
+}

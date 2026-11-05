@@ -1,0 +1,35 @@
+{
+  "description": "unit.changed",
+  "kind": "routing_ops",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.routing.events.eu1a",
+    "key": "unit:bin-c",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0193a1b2-c3d4-7e5f-ba6b-7c8d9e0f1a3a",
+      "type": "unit.changed",
+      "at_ms": 1793000000000,
+      "zone": "eu1a",
+      "saga_id": "0193a1b2-c3d4-7e5f-aa6b-7c8d9e0f1a2d",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "unit": {
+        "unit": "bin-c",
+        "zone": "eu1a",
+        "role": "canary",
+        "release": "1.9.0",
+        "ready": true,
+        "health": "ok",
+        "replicas": 3,
+        "tenant_count": 0
+      },
+      "previous_role": "empty"
+    }
+  }
+}

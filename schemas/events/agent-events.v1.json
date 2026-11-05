@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/agent-events/v1.json",
+  "title": "agent.events (0.14.0)",
+  "description": "parity-cc-routing -> reports, the supervisor cockpit, works-council transparency (its PLAN §5.4). Key: tenant_id; headers tenant_id and schema_version (Q12). At-least-once: readers drop a repeated event_id. No personal data: agent ids are opaque, reason and disposition codes are the tenant's codes. Events are not state: under backpressure RE drops and counts them.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "type",
+    "tenant_id",
+    "agent_id",
+    "at_ms"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUIDv7"
+    },
+    "type": {
+      "enum": [
+        "state_changed",
+        "wrap_up_ended",
+        "queues_changed",
+        "forced_state",
+        "mode_changed"
+      ]
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "agent_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "at_ms": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "state_changed"
+        },
+        "state": {
+          "enum": [
+            "logged_out",
+            "not_ready",
+            "ready",
+            "offered",
+            "reserved",
+            "on_call",
+            "wrap_up"
+          ]
+        },
+        "state_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason_code": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "state",
+        "state_version"
+      ]
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "wrap_up_ended"
+        },
+        "reservation_id": {
+          "type": "string"
+        },
+        "interaction_id": {
+          "type": "string"
+        },
+        "queue_id": {
+          "type": "string"
+        },
+        "disposition_code": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "C12: the agent's disposition; empty when the wrap-up limit ended it"
+        },
+        "ended_by": {
+          "enum": [
+            "agent",
+            "limit"
+          ]
+        }
+      },
+      "required": [
+        "reservation_id",
+        "interaction_id",
+        "disposition_code",
+        "ended_by"
+      ]
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "queues_changed"
+        },
+        "before": {
+          "$ref": "#/$defs/set"
+        },
+        "after": {
+          "$ref": "#/$defs/set"
+        },
+        "pending": {
+          "$ref": "#/$defs/set"
+        },
+        "reason": {
+          "enum": [
+            "unspecified",
+            "login",
+            "optimizer",
+            "supervisor_pin",
+            "supervisor_unpin",
+            "config",
+            "mode_change",
+            "fallback"
+          ]
+        },
+        "queues_version": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "pending",
+        "reason",
+        "queues_version"
+      ]
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "forced_state"
+        },
+        "supervisor_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "target": {
+          "enum": [
+            "not_ready",
+            "logged_out"
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "supervisor_id",
+        "target"
+      ]
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "mode_changed"
+        },
+        "mode": {
+          "enum": [
+            "inbound",
+            "campaign"
+          ],
+          "description": "The agent's mode now (0.14.0, campaign lending)"
+        },
+        "campaign_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "description": "The campaign it was lent to (mode campaign) or left (mode inbound)"
+        },
+        "reason": {
+          "enum": [
+            "lent",
+            "returned",
+            "logged_out"
+          ],
+          "description": "lent: LendAgents switched it (at once or once idle); returned: ReturnAgents; logged_out: a logout ends the lending"
+        }
+      },
+      "required": [
+        "mode",
+        "campaign_id",
+        "reason"
+      ]
+    }
+  ],
+  "$defs": {
+    "set": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "queue_id",
+          "tier"
+        ],
+        "properties": {
+          "queue_id": {
+            "type": "string"
+          },
+          "tier": {
+            "enum": [
+              "primary",
+              "secondary"
+            ]
+          },
+          "pinned": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

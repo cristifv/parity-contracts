@@ -1,0 +1,73 @@
+{
+  "description": "The common lifecycle events (logging/events.common.v1.json).",
+  "kind": "log",
+  "writer_valid": true,
+  "violates": [],
+  "catalogues": [
+    "logging/examples/events.parity-gateway.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 101,
+      "event": "service.starting",
+      "msg": "starting",
+      "component": "parity.gateway.Main"
+    },
+    {
+      "ts": "2026-11-01T10:00:00.003Z",
+      "level": "info",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 102,
+      "event": "config.loaded",
+      "msg": "configuration loaded",
+      "component": "parity.gateway.Config",
+      "attrs": {
+        "file": "/etc/parity-gateway/application.yml"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.903Z",
+      "level": "info",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 103,
+      "event": "service.ready",
+      "msg": "ready",
+      "component": "parity.gateway.Readiness"
+    },
+    {
+      "ts": "2026-11-01T10:01:00.903Z",
+      "level": "info",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 104,
+      "event": "service.draining",
+      "msg": "draining",
+      "component": "parity.gateway.Readiness",
+      "cause": "signal:SIGTERM"
+    },
+    {
+      "ts": "2026-11-01T10:01:05.903Z",
+      "level": "info",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 105,
+      "event": "service.stopped",
+      "msg": "exiting",
+      "component": "parity.gateway.Main",
+      "attrs": {
+        "exit_code": 0
+      }
+    }
+  ]
+}

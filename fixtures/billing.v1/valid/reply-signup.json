@@ -1,0 +1,36 @@
+{
+  "description": "A signup's status: card saved, trial credit granted",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.parity-frontend",
+    "key": "parity-frontend-1:get-signup-status-0001",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "parity-frontend-1:get-signup-status-0001",
+      "ok": true,
+      "result": {
+        "signup_id": "0192f6a1-e000-7aaa-8bbb-00000000a001",
+        "state": "card_saved",
+        "slug": "acme-new",
+        "kind": "trial",
+        "plan_id": "trial",
+        "seats": 2,
+        "trial": {
+          "granted": true,
+          "credit_minor": 1500,
+          "currency": "EUR",
+          "expires_at_ms": 1795392000000,
+          "refused": null
+        },
+        "next": "wait",
+        "updated_at_ms": 1792800000000
+      }
+    }
+  }
+}

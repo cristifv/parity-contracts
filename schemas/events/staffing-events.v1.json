@@ -1,0 +1,623 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/staffing-events/v1.json",
+  "title": "parity.staffing (0.12.0)",
+  "description": "parity-cc-routing's optimizer -> the supervisor cockpit, admin-console, reports (its PLAN §5.3, §5.4; phase 5). staffing_plan every tick per tenant: the CTMC's predicted service level, abandonment and EWT per queue now and with the levers it plans (lever a: each queue's dispatch weight and secondary delay), whether they apply (auto, exact results only) and the forecast's source. staffing_recommendation in advise and auto: advice only (lever c: ready agents a queue needs within the horizon, with the predicted effect; values for config.routing's min/max agents); nothing is applied by it. Key: tenant_id; headers tenant_id and schema_version (Q12). At-least-once: readers drop a repeated event_id. No personal data (no agent ids, numbers or customer keys). Events are not state: under backpressure RE drops and counts them.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "type",
+    "tenant_id",
+    "at_ms"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUIDv7"
+    },
+    "type": {
+      "enum": [
+        "staffing_plan",
+        "staffing_recommendation"
+      ]
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "at_ms": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "staffing_plan"
+        },
+        "plan_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "valid_until_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mode": {
+          "enum": [
+            "off",
+            "advise",
+            "auto"
+          ]
+        },
+        "applies": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "levers | none | held: <why> (mode, approx)"
+        },
+        "forecast_source": {
+          "enum": [
+            "config_default",
+            "ewma",
+            "ewma_profile",
+            "model"
+          ],
+          "description": "Where the arrival forecast came from: config_default (nothing observed yet), ewma, ewma_profile (with the weekday/slot profile of routing_bucket_actuals), model (a learned forecaster, phase 5b; the baseline is the fallback)"
+        },
+        "quality": {
+          "enum": [
+            "exact",
+            "approx",
+            "overloaded",
+            "long",
+            "refused"
+          ],
+          "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+        },
+        "dispatch": {
+          "enum": [
+            "longest_idle",
+            "tiers"
+          ]
+        },
+        "objective": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "current",
+            "planned"
+          ],
+          "properties": {
+            "current": {
+              "type": "number",
+              "minimum": 0
+            },
+            "planned": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "description": "J: missed-SL and abandoned calls per second weighted by importance, both classes (PLAN §3.4)"
+        },
+        "agents": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "counted",
+            "pools"
+          ],
+          "properties": {
+            "counted": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pools": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "queues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "queue_id",
+              "arrivals_per_s",
+              "agents",
+              "weight",
+              "delay_s",
+              "quality",
+              "current",
+              "planned"
+            ],
+            "properties": {
+              "queue_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "arrivals_per_s": {
+                "type": "number",
+                "minimum": 0
+              },
+              "vip_arrivals_per_s": {
+                "type": "number",
+                "minimum": 0
+              },
+              "agents": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reach",
+                  "primary",
+                  "busy"
+                ],
+                "properties": {
+                  "reach": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "primary": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "busy": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "description": "Agents counted individually: reach = agents that may take its calls now, primary = with it PRIMARY, busy = the sum of the agents' predicted shares"
+              },
+              "weight": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "current",
+                  "planned",
+                  "default"
+                ],
+                "properties": {
+                  "current": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "planned": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "default": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              },
+              "delay_s": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "current",
+                  "planned",
+                  "default"
+                ],
+                "properties": {
+                  "current": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "planned": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "default": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              },
+              "min_agents": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max_agents": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "quality": {
+                "enum": [
+                  "exact",
+                  "approx",
+                  "overloaded",
+                  "long",
+                  "refused"
+                ],
+                "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+              },
+              "why": {
+                "type": "string",
+                "maxLength": 64,
+                "description": "Why approx (the first reason)"
+              },
+              "current": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "sl",
+                  "abandon",
+                  "ewt_s",
+                  "quality"
+                ],
+                "properties": {
+                  "sl": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "abandon": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "ewt_s": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "quality": {
+                    "enum": [
+                      "exact",
+                      "approx",
+                      "overloaded",
+                      "long",
+                      "refused"
+                    ],
+                    "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+                  },
+                  "vip": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sl",
+                      "abandon",
+                      "ewt_s"
+                    ],
+                    "properties": {
+                      "sl": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "abandon": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "ewt_s": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "description": "The VIP class alone (only with VIP traffic)"
+                  }
+                }
+              },
+              "planned": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "sl",
+                  "abandon",
+                  "ewt_s",
+                  "quality"
+                ],
+                "properties": {
+                  "sl": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "abandon": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "ewt_s": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "quality": {
+                    "enum": [
+                      "exact",
+                      "approx",
+                      "overloaded",
+                      "long",
+                      "refused"
+                    ],
+                    "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+                  },
+                  "vip": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sl",
+                      "abandon",
+                      "ewt_s"
+                    ],
+                    "properties": {
+                      "sl": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "abandon": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "ewt_s": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "description": "The VIP class alone (only with VIP traffic)"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "plan_version",
+        "valid_until_ms",
+        "mode",
+        "applies",
+        "forecast_source",
+        "quality",
+        "dispatch",
+        "objective",
+        "agents",
+        "queues"
+      ]
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "staffing_recommendation"
+        },
+        "plan_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mode": {
+          "enum": [
+            "advise",
+            "auto"
+          ]
+        },
+        "forecast_source": {
+          "enum": [
+            "config_default",
+            "ewma",
+            "ewma_profile",
+            "model"
+          ],
+          "description": "Where the arrival forecast came from: config_default (nothing observed yet), ewma, ewma_profile (with the weekday/slot profile of routing_bucket_actuals), model (a learned forecaster, phase 5b; the baseline is the fallback)"
+        },
+        "horizon_s": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "queue_id",
+              "quality",
+              "reason"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "ready_agents",
+                  "min_agents",
+                  "max_agents"
+                ],
+                "description": "ready_agents: delta more READY agents for the queue within within_s (advice: no login, break or queue move is made); min_agents/max_agents: a value for config.routing"
+              },
+              "queue_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "delta": {
+                "type": "integer",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "value": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "current": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "within_s": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sl_target": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "predicted": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "before",
+                  "after"
+                ],
+                "properties": {
+                  "before": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sl",
+                      "abandon",
+                      "ewt_s",
+                      "quality"
+                    ],
+                    "properties": {
+                      "sl": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "abandon": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "ewt_s": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "quality": {
+                        "enum": [
+                          "exact",
+                          "approx",
+                          "overloaded",
+                          "long",
+                          "refused"
+                        ],
+                        "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+                      },
+                      "vip": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "sl",
+                          "abandon",
+                          "ewt_s"
+                        ],
+                        "properties": {
+                          "sl": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "abandon": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "ewt_s": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "description": "The VIP class alone (only with VIP traffic)"
+                      }
+                    }
+                  },
+                  "after": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sl",
+                      "abandon",
+                      "ewt_s",
+                      "quality"
+                    ],
+                    "properties": {
+                      "sl": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "abandon": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "ewt_s": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "quality": {
+                        "enum": [
+                          "exact",
+                          "approx",
+                          "overloaded",
+                          "long",
+                          "refused"
+                        ],
+                        "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+                      },
+                      "vip": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "sl",
+                          "abandon",
+                          "ewt_s"
+                        ],
+                        "properties": {
+                          "sl": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "abandon": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "ewt_s": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "description": "The VIP class alone (only with VIP traffic)"
+                      }
+                    }
+                  }
+                }
+              },
+              "quality": {
+                "enum": [
+                  "exact",
+                  "approx",
+                  "overloaded",
+                  "long",
+                  "refused"
+                ],
+                "description": "The model's label: only exact results change levers in auto (PLAN §4.3)"
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "plan_version",
+        "mode",
+        "forecast_source",
+        "horizon_s",
+        "recommendations"
+      ]
+    }
+  ]
+}

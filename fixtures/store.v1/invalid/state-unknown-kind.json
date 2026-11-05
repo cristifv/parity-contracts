@@ -1,0 +1,26 @@
+{
+  "description": "An unknown kind",
+  "kind": "store",
+  "writer_valid": false,
+  "violates": [
+    "schema",
+    "key_mismatch"
+  ],
+  "reader": "reject",
+  "record": {
+    "topic": "tenant.store.state",
+    "key": "queue:sales",
+    "headers": {
+      "schema_version": "1",
+      "revision": "8",
+      "tenant_id": "acme"
+    },
+    "value": {
+      "schema_version": 1,
+      "kind": "queue",
+      "number": "+15550100100",
+      "tenant_id": "acme",
+      "revision": 8
+    }
+  }
+}

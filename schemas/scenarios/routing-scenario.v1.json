@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.parity.example/schemas/scenarios/routing-scenario.v1.json",
+  "title": "routing-scenario.v1",
+  "description": "A routing/capacity test scenario (the user, 2026-10-28; parity-cc-routing PLAN §7.1): who works, what arrives (a rate function or explicit arrivals), how long calls last and how patient callers are, what goes wrong when, and what must hold. Independent of any engine's code: parity-cc-routing's scenario runner plays it against the real engine; IE load tests or another engine may reuse it. Times are seconds from the scenario's start on a virtual clock. Test data only: the shared test tenants, no personal data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "description", "seed", "duration_s", "bin", "tenants", "expectations"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"},
+    "description": {"type": "string", "minLength": 1},
+    "seed": {"type": "integer", "minimum": 0, "description": "The random seed: arrivals, durations, behaviour. Same seed, same scenario"},
+    "start_ms": {"type": "integer", "minimum": 0, "description": "The virtual clock's start (epoch ms); default 1792800000000"},
+    "duration_s": {"type": "integer", "minimum": 1, "maximum": 604800},
+    "time_scale": {"type": "number", "minimum": 0, "description": "Virtual seconds per wall second; 0 (the default) runs as fast as the engine answers"},
+    "bin": {"type": "string", "pattern": "^[a-z0-9-]{1,32}$"},
+    "tenants": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/tenant"}},
+    "events": {"type": "array", "items": {"$ref": "#/$defs/event"}},
+    "expectations": {"$ref": "#/$defs/expectations"},
+    "forecast": {"$ref": "#/$defs/forecast"}
+  },
+  "$defs": {
+    "tenant_id": {"type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"},
+    "queue_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]{1,64}$"},
+    "dist": {
+      "description": "A duration distribution in seconds",
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "mean_s"],
+         "properties": {"kind": {"const": "exponential"}, "mean_s": {"type": "number", "exclusiveMinimum": 0}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "mean_s", "cv"],
+         "properties": {"kind": {"const": "lognormal"}, "mean_s": {"type": "number", "exclusiveMinimum": 0}, "cv": {"type": "number", "exclusiveMinimum": 0, "maximum": 5}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "s"],
+         "properties": {"kind": {"const": "fixed"}, "s": {"type": "number", "minimum": 0}}}
+      ]
+    },
+    "spike": {
+      "type": "object", "additionalProperties": false, "required": ["start_s", "duration_s", "multiplier"],
+      "properties": {
+        "start_s": {"type": "number", "minimum": 0},
+        "duration_s": {"type": "number", "exclusiveMinimum": 0},
+        "multiplier": {"type": "number", "minimum": 0, "maximum": 1000},
+        "ramp_s": {"type": "number", "minimum": 0, "description": "Linear ramp up and down at each end; 0: a step"},
+        "decay_s": {"type": "number", "minimum": 0, "description": "Phase 5b+5c (additive): a linear return to the base rate over this many seconds AFTER start_s + duration_s (ramp_s then ramps up only); absent: ramp_s ramps down inside the duration, as before"}
+      }
+    },
+    "arrivals": {
+      "description": "Calls arriving at a queue: a rate function (non-homogeneous Poisson, thinned) or an explicit list. Spikes multiply any rate",
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "bucket_s", "per_hour"],
+         "properties": {"kind": {"const": "piecewise"}, "bucket_s": {"type": "number", "exclusiveMinimum": 0},
+                        "per_hour": {"type": "array", "minItems": 1, "items": {"type": "number", "minimum": 0}},
+                        "spikes": {"type": "array", "items": {"$ref": "#/$defs/spike"}},
+                        "overdispersion": {"type": "number", "minimum": 0, "maximum": 3, "description": "Phase 5b+5c (additive): the coefficient of variation of a per-minute gamma factor on the rate; 0: plain Poisson"},
+                        "bursts": {"$ref": "#/$defs/bursts"}, "level_steps": {"type": "array", "items": {"$ref": "#/$defs/level_step"}},
+                        "bots": {"type": "array", "items": {"$ref": "#/$defs/bots"}}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "bucket_s", "shape", "scale_per_hour"],
+         "properties": {"kind": {"const": "profile"}, "bucket_s": {"type": "number", "exclusiveMinimum": 0},
+                        "shape": {"type": "array", "minItems": 1, "items": {"type": "number", "minimum": 0}, "description": "Relative weights per bucket; the peak bucket gets scale_per_hour"},
+                        "scale_per_hour": {"type": "number", "minimum": 0},
+                        "spikes": {"type": "array", "items": {"$ref": "#/$defs/spike"}},
+                        "overdispersion": {"type": "number", "minimum": 0, "maximum": 3, "description": "Phase 5b+5c (additive): the coefficient of variation of a per-minute gamma factor on the rate; 0: plain Poisson"},
+                        "bursts": {"$ref": "#/$defs/bursts"}, "level_steps": {"type": "array", "items": {"$ref": "#/$defs/level_step"}},
+                        "bots": {"type": "array", "items": {"$ref": "#/$defs/bots"}}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "points"],
+         "properties": {"kind": {"const": "poisson"},
+                        "points": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["t_s", "per_hour"],
+                                   "properties": {"t_s": {"type": "number", "minimum": 0}, "per_hour": {"type": "number", "minimum": 0}}}, "description": "lambda(t), linear between points, constant after the last"},
+                        "spikes": {"type": "array", "items": {"$ref": "#/$defs/spike"}},
+                        "overdispersion": {"type": "number", "minimum": 0, "maximum": 3, "description": "Phase 5b+5c (additive): the coefficient of variation of a per-minute gamma factor on the rate; 0: plain Poisson"},
+                        "bursts": {"$ref": "#/$defs/bursts"}, "level_steps": {"type": "array", "items": {"$ref": "#/$defs/level_step"}},
+                        "bots": {"type": "array", "items": {"$ref": "#/$defs/bots"}}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "at_s"],
+         "properties": {"kind": {"const": "list"}, "at_s": {"type": "array", "items": {"type": "number", "minimum": 0}}}}
+      ]
+    },
+    "max_wait_action": {
+      "type": "object", "additionalProperties": false, "required": ["action"],
+      "properties": {"action": {"enum": ["disconnect", "queue", "flow_step"]}, "queue_id": {"$ref": "#/$defs/queue_id"}, "flow_step": {"type": "string", "minLength": 1}}
+    },
+    "queue": {
+      "type": "object", "additionalProperties": false, "required": ["id", "max_wait_s", "max_wait_action", "arrivals", "handle_time", "patience"],
+      "properties": {
+        "id": {"$ref": "#/$defs/queue_id"},
+        "required_skills": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["skill_id"],
+                            "properties": {"skill_id": {"type": "string", "minLength": 1}, "min_level": {"type": "integer", "minimum": 0, "maximum": 5}}}},
+        "priority": {"type": "integer", "minimum": 1, "maximum": 100},
+        "offer_timeout_s": {"type": "integer", "minimum": 5, "maximum": 120},
+        "wrap_up_limit_s": {"type": "integer", "minimum": 0, "maximum": 3600},
+        "sla_s": {"type": "integer", "minimum": 1},
+        "escalate_after_s": {"type": "integer", "minimum": 1},
+        "max_wait_s": {"type": "integer", "minimum": 1},
+        "max_wait_action": {"$ref": "#/$defs/max_wait_action"},
+        "max_entries": {"type": "integer", "minimum": 1},
+        "arrivals": {"$ref": "#/$defs/arrivals"},
+        "handle_time": {"$ref": "#/$defs/dist"},
+        "patience": {"$ref": "#/$defs/dist"},
+        "priority_mix": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["priority", "share"],
+                         "properties": {"priority": {"type": "integer", "minimum": 1, "maximum": 100}, "share": {"type": "number", "minimum": 0, "maximum": 1}}}},
+        "redial": {"type": "object", "additionalProperties": false, "required": ["p"],
+                   "description": "Phase 5b+5c (additive): a caller who abandons calls again with probability p after an exponential delay (arrivals that depend on service)",
+                   "properties": {"p": {"type": "number", "minimum": 0, "maximum": 1}, "mean_delay_s": {"type": "number", "minimum": 0}}}
+      }
+    },
+    "shift": {
+      "type": "object", "additionalProperties": false, "required": ["login_s", "logout_s"],
+      "properties": {"login_s": {"type": "number", "minimum": 0}, "logout_s": {"type": "number", "minimum": 0}}
+    },
+    "agent_group": {
+      "type": "object", "additionalProperties": false, "required": ["count", "queues"],
+      "description": "count agents with the same skills, membership, site and shifts; ids are the listed ones, then id_prefix plus a number",
+      "properties": {
+        "count": {"type": "integer", "minimum": 1, "maximum": 20000},
+        "ids": {"type": "array", "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}},
+        "id_prefix": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,100}$"},
+        "skills": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1, "maximum": 5}},
+        "queues": {"type": "array", "items": {"$ref": "#/$defs/queue_id"}},
+        "site": {"type": "string", "pattern": "^[a-z0-9-]{1,32}$"},
+        "shifts": {"type": "array", "items": {"$ref": "#/$defs/shift"}, "description": "Default: logged in for the whole scenario"}
+      }
+    },
+    "behaviour": {
+      "type": "object", "additionalProperties": false,
+      "description": "How simulated agents and their legs behave",
+      "properties": {
+        "answer_delay": {"$ref": "#/$defs/dist"},
+        "p_reject": {"type": "number", "minimum": 0, "maximum": 1},
+        "p_ignore": {"type": "number", "minimum": 0, "maximum": 1, "description": "The offer expires unanswered"},
+        "p_leg_failed": {"type": "number", "minimum": 0, "maximum": 1},
+        "p_no_answer": {"type": "number", "minimum": 0, "maximum": 1, "description": "The agent's leg rings out (AGENT_NO_ANSWER)"},
+        "wrap_up": {"$ref": "#/$defs/dist"}
+      }
+    },
+    "tenant": {
+      "type": "object", "additionalProperties": false, "required": ["id", "queues", "agents"],
+      "properties": {
+        "id": {"$ref": "#/$defs/tenant_id"},
+        "queues": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/queue"}},
+        "agents": {"type": "array", "items": {"$ref": "#/$defs/agent_group"}},
+        "behaviour": {"$ref": "#/$defs/behaviour"},
+        "reject_skip_s": {"type": "integer", "minimum": 0, "maximum": 300},
+        "owner_loss_s": {"type": "integer", "minimum": 10, "maximum": 3600, "description": "0.9.1: how long an IE owner may be gone (no stream and no RPC, or nothing acknowledged on a live stream) before the engine drops its calls (parity-cc-routing CR-083; default 60)"}
+      }
+    },
+    "event": {
+      "type": "object", "required": ["at_s", "kind"],
+      "properties": {
+        "at_s": {"type": "number", "minimum": 0},
+        "kind": {"enum": ["agent_outage", "mass_logout", "mass_login", "ie_stream_lost", "gateway_disconnect", "re_restart", "request_flood", "ie_restart", "supervisor_pin", "queue_config"]},
+        "tenant": {"$ref": "#/$defs/tenant_id"},
+        "site": {"type": "string"},
+        "percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "count": {"type": "integer", "minimum": 1, "description": "request_flood (0.9.0): callers arriving at the same instant, their Enqueue requests sent concurrently"},
+        "stall": {"type": "boolean", "description": "request_flood (0.9.0): the routing engine's writer for the tenant stalls (a GC pause, CPU starvation) until every request has reached it or been refused"},
+        "over_s": {"type": "number", "minimum": 0, "description": "mass_login: spread over this long"},
+        "group": {"$ref": "#/$defs/agent_group", "description": "mass_login: who logs in"},
+        "down_s": {"type": "number", "minimum": 0, "description": "ie_stream_lost, gateway_disconnect, agent_outage: back after this long (agent_outage: absent = never); ie_restart (0.9.1): IE restarts alone (RE and the gateway stay up), forgets every call it owned and comes back after this long as a new replica"},
+        "queue": {"$ref": "#/$defs/queue_id", "description": "queue_config: the queue that changes; request_flood: the queue the flood calls"},
+        "change": {"type": "object", "description": "queue_config: the fields of a queue that change (phase 4)"},
+        "pin": {"type": "object", "description": "supervisor_pin: {agent_id, queues: [{queue_id, tier}]} (phase 4)"},
+        "note": {"type": "string"}
+      }
+    },
+    "kpi": {
+      "type": "object", "additionalProperties": false, "required": ["metric"],
+      "properties": {
+        "tenant": {"$ref": "#/$defs/tenant_id"},
+        "queue": {"$ref": "#/$defs/queue_id"},
+        "metric": {"enum": ["service_level", "abandon_rate", "max_wait_s", "answered", "overflowed"]},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "tolerance": {"type": "number", "minimum": 0}
+      }
+    },
+    "bursts": {
+      "type": "object", "additionalProperties": false, "required": ["per_hour", "mean_size"],
+      "description": "Phase 5b+5c (additive): clustered arrivals: bursts at per_hour, each a geometric number of calls (mean mean_size) within a few seconds",
+      "properties": {"per_hour": {"type": "number", "minimum": 0}, "mean_size": {"type": "number", "minimum": 1}}
+    },
+    "level_step": {
+      "type": "object", "additionalProperties": false, "required": ["at_s", "multiplier"],
+      "description": "Phase 5b+5c (additive): a level change that stays (step-and-stay, a permanent change; a long ramp_s is a drift)",
+      "properties": {"at_s": {"type": "number", "minimum": 0}, "multiplier": {"type": "number", "minimum": 0, "maximum": 1000}, "ramp_s": {"type": "number", "minimum": 0}}
+    },
+    "bots": {
+      "type": "object", "additionalProperties": false, "required": ["start_s", "duration_s", "per_hour"],
+      "description": "Phase 5b+5c (additive): automated calls (a bot or robocall flood) on top of the rate; they hang up after patience_s unless answered and last talk_s",
+      "properties": {"start_s": {"type": "number", "minimum": 0}, "duration_s": {"type": "number", "minimum": 0}, "per_hour": {"type": "number", "minimum": 0},
+                     "patience_s": {"type": "number", "minimum": 0}, "talk_s": {"type": "number", "minimum": 0}}
+    },
+    "data_fault": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "at_s"],
+      "description": "Phase 5b+5c: a fault in the data the forecaster sees, never in the traffic: gap (no observations for duration_s), duplicate (every window counted twice for duration_s), clock_jump (observation times jump by jump_s), rename (queue becomes to_queue), merge (queues are reported as to_queue), dst (the shape moves by jump_s against UTC)",
+      "properties": {"kind": {"enum": ["gap", "duplicate", "clock_jump", "rename", "merge", "dst"]}, "at_s": {"type": "number", "minimum": 0},
+                     "duration_s": {"type": "number", "minimum": 0}, "queue": {"type": "string"}, "queues": {"type": "array", "items": {"type": "string"}},
+                     "to_queue": {"type": "string"}, "jump_s": {"type": "number"}}
+    },
+    "window": {
+      "type": "object", "additionalProperties": false, "required": ["start_s", "end_s"],
+      "properties": {"start_s": {"type": "number", "minimum": 0}, "end_s": {"type": "number", "minimum": 0},
+                     "known": {"type": "boolean", "description": "the forecaster is told (config.holidays, an event calendar)"}}
+    },
+    "forecast": {
+      "type": "object", "additionalProperties": false, "required": ["purpose"],
+      "description": "Phase 5b+5c (additive; parity-cc-routing PLAN §3.8, §5.9): the learned forecaster's scenarios. training_catalogue: the compound catalogue (patterns with randomization ranges) that scripts/forecast_scenarios.py expands into training_sample files with recorded seeds. ood: a held-out out-of-distribution scenario (scenarios/forecast-ood/, never used in training; the leakage check keeps its features outside the catalogue's bounds)",
+      "properties": {
+        "purpose": {"enum": ["training_catalogue", "training_sample", "ood"]},
+        "resolutions_s": {"type": "array", "items": {"enum": [10, 60, 900]}},
+        "start_ms": {"type": "integer", "minimum": 0, "description": "epoch ms of t = 0 (the calendar features)"},
+        "history_days": {"type": "integer", "minimum": 0, "maximum": 60, "description": "days of the scenario's normal traffic (its anomaly removed) simulated before t = 0 for the ranges and the baseline's profile"},
+        "seeds": {"type": "object", "additionalProperties": false, "properties": {"base": {"type": "integer", "minimum": 0}, "samples": {"type": "integer", "minimum": 1}, "holdout": {"type": "integer", "minimum": 0}}},
+        "patterns": {"type": "object", "description": "training_catalogue: randomization ranges ([min, max]) and weights per pattern; scripts/forecast_scenarios.py documents and checks every key"},
+        "leakage_bounds": {"type": "object", "description": "training_catalogue: per OOD feature name, the [min, max] the catalogue can produce",
+                           "additionalProperties": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2}},
+        "sample": {"type": "object", "description": "training_sample: the generator's seed and every parameter it drew"},
+        "staffing": {"type": "object", "additionalProperties": false, "description": "the series DES staffs each queue for its planned load (no spikes): ceil(planned erlangs / occupancy * factor)",
+                     "properties": {"occupancy": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}, "factor": {"type": "number", "exclusiveMinimum": 0}}},
+        "calendar": {"type": "object", "additionalProperties": false,
+                     "properties": {"holidays": {"type": "array", "items": {"$ref": "#/$defs/window"}}, "events": {"type": "array", "items": {"$ref": "#/$defs/window"}}}},
+        "data_faults": {"type": "array", "items": {"$ref": "#/$defs/data_fault"}},
+        "ood": {"type": "object", "additionalProperties": false, "required": ["onset_s", "features", "expect"],
+                "properties": {"onset_s": {"type": "number", "minimum": 0}, "end_s": {"type": "number", "minimum": 0},
+                               "features": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["name", "value"],
+                                                                                    "properties": {"name": {"type": "string"}, "value": {"type": "number"}}}},
+                               "expect": {"type": "object", "additionalProperties": false,
+                                          "properties": {"triggers": {"type": "array", "items": {"enum": ["no_model", "stale", "above_range", "drift", "ratio", "width", "realized_error", "nan", "negative", "slow"]}, "description": "at least one of these fires within detect_within_s of onset_s"},
+                                                         "detect_within_s": {"type": "number", "minimum": 0}, "max_fallback_entries": {"type": "integer", "minimum": 0},
+                                                         "recover": {"type": "boolean"}, "recover_within_s": {"type": "number", "minimum": 0}, "kpi_tolerance": {"type": "number", "minimum": 0}}}}}
+      }
+    },
+    "expectations": {
+      "type": "object", "additionalProperties": false, "required": ["invariants"],
+      "properties": {
+        "invariants": {"oneOf": [{"const": "all"}, {"type": "array", "items": {"enum": ["I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9", "I10", "I11"]}}],
+                       "description": "The invariant catalogue (parity-cc-routing PLAN §7.1; CONVENTIONS 'Routing scenarios')"},
+        "kpi": {"type": "array", "items": {"$ref": "#/$defs/kpi"}},
+        "latency_ms": {"type": "object", "additionalProperties": false, "properties": {"p99": {"type": "number"}, "max": {"type": "number"}}, "description": "I9: per Enqueue/AnswerOffer request, wall clock"},
+        "rss_mib_max": {"type": "number", "description": "I10"},
+        "must_occur": {"type": "array", "uniqueItems": true,
+                       "items": {"enum": ["overflow_queue", "overflow_disconnect", "overflow_flow_step", "queue_full", "assignment_expired", "request_refused_unavailable", "offer_expired", "offer_rejected", "owner_lost"]},
+                       "description": "0.9.0: outcomes the run must provoke at least once, so a variant that stops exercising its path fails instead of passing vacuously (parity-cc-routing CR-055)"},
+        "prediction_error": {"type": "array", "description": "Phase 5+: per predictor (ctmc, nnmpc; phase 5b+5c: baseline, model, in_use = what the CTMC used, oracle), the error of its forecasts against the outcome",
+                             "items": {"type": "object", "additionalProperties": false, "required": ["predictor", "metric", "max"],
+                                       "properties": {"predictor": {"enum": ["ctmc", "nnmpc", "baseline", "model", "in_use", "oracle"]}, "metric": {"enum": ["arrivals_wape", "sl_mae", "queue_length_mae", "arrivals_wape_1min", "arrivals_wape_15min"]}, "horizon_min": {"type": "integer", "minimum": 1}, "max": {"type": "number", "minimum": 0}}}}
+      }
+    }
+  }
+}

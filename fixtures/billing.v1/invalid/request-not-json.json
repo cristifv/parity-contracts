@@ -1,0 +1,16 @@
+{
+  "description": "A body that isn't JSON: never answered",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "schema",
+    "bad_id",
+    "bad_reply_to"
+  ],
+  "reader": "dlt",
+  "record": {
+    "topic": "billing.web.requests",
+    "key": "0192f6a1-e000-7aaa-8bbb-00000000a001",
+    "headers": {}
+  }
+}

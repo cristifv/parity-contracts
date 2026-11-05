@@ -1,0 +1,33 @@
+{
+  "description": "A type this reader doesn't know: ignored",
+  "kind": "kafka",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "ignore",
+  "record": {
+    "topic": "interaction.events",
+    "key": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "headers": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-7c40-701a-8000-00000000001a",
+      "type": "future_type",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "tenant_id": "acme",
+      "seq": 9,
+      "owner_epoch": 1042,
+      "at_ms": 1792800009000,
+      "channel": "voice",
+      "direction": "inbound",
+      "cpaas": false,
+      "customer_key": "ck_3q2-xV9mZr8LbN0pQ7sT1w"
+    }
+  }
+}

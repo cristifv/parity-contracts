@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "service": "parity-cc-routing",
+  "description": "Starter catalogue for parity-cc-routing (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-cc-routing.v1.json; the service owns it from then on.",
+  "events": {
+    "entry.enqueued": {
+      "description": "A caller joined a queue.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "queue_id",
+        "entry_id",
+        "bin",
+        "leader_epoch"
+      ]
+    },
+    "entry.dequeued": {
+      "description": "A caller left a queue without an agent (attrs.reason).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "queue_id",
+        "entry_id"
+      ],
+      "attrs": [
+        "reason"
+      ]
+    },
+    "agent.selected": {
+      "description": "An agent was chosen for a caller. decision: the candidates and score parts (debug, or info sampled at sample_rate).",
+      "levels": [
+        "debug",
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "queue_id",
+        "entry_id",
+        "agent_id",
+        "reservation_id"
+      ],
+      "decision": true,
+      "sample_rate": 0.01
+    },
+    "offer.sent": {
+      "description": "An offer went to the agent's gateway session.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "agent_id",
+        "reservation_id"
+      ],
+      "attrs": [
+        "timeout_ms"
+      ]
+    },
+    "offer.accepted": {
+      "description": "The agent accepted the offer.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "agent_id",
+        "reservation_id"
+      ]
+    },
+    "offer.expired": {
+      "description": "The offer timed out; the caller keeps its place.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "agent_id",
+        "reservation_id"
+      ]
+    },
+    "agent.state_changed": {
+      "description": "An agent's routing state moved.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "agent_id"
+      ],
+      "transition": true
+    },
+    "weights.updated": {
+      "description": "The optimizer moved a queue's weight (lever a); decision says why.",
+      "levels": [
+        "info",
+        "debug"
+      ],
+      "requires": [
+        "queue_id"
+      ],
+      "decision": true,
+      "sample_rate": 1
+    },
+    "request.refused": {
+      "description": "An RPC was refused (error.code); rate limited per op (CR-069).",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "op",
+        "error"
+      ],
+      "dedup": {
+        "window_ms": 1000,
+        "key": [
+          "op"
+        ]
+      }
+    },
+    "leader.elected": {
+      "description": "This replica leads its bin (leader_epoch).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "bin",
+        "leader_epoch"
+      ]
+    }
+  }
+}

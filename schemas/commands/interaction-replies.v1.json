@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/interaction-replies/v1.json",
+  "title": "Answers to interaction.commands, schema_version 1",
+  "description": "interaction-engine's answer on the request's reply_to, keyed like the request, with the four headers.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "ok"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "result": {
+      "type": "object"
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "bad_request",
+            "not_found",
+            "call_ended",
+            "destination_not_allowed",
+            "caller_id_not_allowed",
+            "concurrency_limit",
+            "insufficient_balance",
+            "unavailable",
+            "internal"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "ok": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "result"
+    ],
+    "not": {
+      "required": [
+        "error"
+      ]
+    }
+  },
+  "else": {
+    "required": [
+      "error"
+    ],
+    "not": {
+      "required": [
+        "result"
+      ]
+    }
+  },
+  "unevaluatedProperties": false
+}

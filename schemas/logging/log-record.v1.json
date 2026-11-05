@@ -1,0 +1,408 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/log-record/v1.json",
+  "title": "log-record.v1: one structured log line (0.13.0)",
+  "description": "Every Parity service writes its logs as NDJSON on stdout or stderr: one object per line, at most 16000 bytes (UTF-8, without the newline), so Docker never splits a line (16 KiB). This schema is the structure; CONVENTIONS.md \"Logging (log-record.v1)\" has the rules a schema can't hold (masking, the catalogue, levels, sizes, dedup) and contract-check (--logs) checks both. Writers only: strict (unevaluatedProperties: false), so event-specific fields go in attrs. Readers (Fluent Bit, Loki, an analyst, an AI) ignore unknown fields. The masking classes (masking/cases.v1.json, masking/billing.v1.json) apply to every field at every depth; envelope names are chosen so that none of them classifies as phone, secret or email.",
+  "type": "object",
+  "required": [
+    "ts",
+    "level",
+    "service",
+    "version",
+    "instance",
+    "seq",
+    "event",
+    "msg"
+  ],
+  "properties": {
+    "ts": {
+      "description": "Wall-clock time the record was made: RFC 3339, UTC, exactly 3 fractional digits, 'Z'.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$"
+    },
+    "level": {
+      "enum": [
+        "trace",
+        "debug",
+        "info",
+        "warn",
+        "error",
+        "fatal"
+      ]
+    },
+    "service": {
+      "description": "The repository name: parity-interaction-engine, parity-cc-routing, ...",
+      "$ref": "#/$defs/service"
+    },
+    "version": {
+      "description": "The build: a semver, a git sha, or both (0.4.2+3f9c2ab).",
+      "type": "string",
+      "pattern": "^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$"
+    },
+    "instance": {
+      "description": "This process's stable name: the pod, container or replica id.",
+      "$ref": "#/$defs/opaque"
+    },
+    "incarnation": {
+      "description": "Where the service has one (parity-telephony-controller's incarnation, a process start id): changes on every start of the same instance.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,64}$"
+    },
+    "seq": {
+      "description": "Per (service, instance, incarnation): 1 for the first record of the process, +1 per record made, including those later dropped. Orders records within one millisecond; a gap is a dropped record.",
+      "$ref": "#/$defs/counter"
+    },
+    "event": {
+      "description": "A stable name from the service's catalogue (logging/events.<service>.v1.json) or logging/events.common.v1.json: dotted snake_case, noun then past-tense verb (offer.sent, leg.answered).",
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "msg": {
+      "description": "Short and human, a constant per call site: values go in fields, never interpolated.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "thread": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "component": {
+      "description": "The module or class that logged: ie_core::queue, parity.gateway.agents.OfferRelay.",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.:/$-]{0,127}$"
+    },
+    "op": {
+      "description": "The RPC, handler, command or consumer being served: parity.routing.v1.RoutingService/Enqueue, POST /v1/calls, interaction.commands:redirect.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_./:{}* -]+$"
+    },
+    "from_state": {
+      "description": "A state machine transition: the state left (named from_state, not state_from: the masking rules treat names ending _from or _to as phone numbers).",
+      "$ref": "#/$defs/state"
+    },
+    "to_state": {
+      "description": "A state machine transition: the state entered.",
+      "$ref": "#/$defs/state"
+    },
+    "cause": {
+      "description": "What triggered this record, as <kind>:<reference>: event:<event_id>, rpc:<method>, cmd:<command id>, timer:<name>, sip:<method or status>, http:<method path>, kafka:<topic>, ws:<frame type>, signal:<name>, operator:<action>, config:<name>, startup:<step>, internal:<name>. Never an exception class (that is error.kind).",
+      "type": "string",
+      "maxLength": 200,
+      "pattern": "^(event|rpc|cmd|timer|sip|http|kafka|ws|signal|operator|config|startup|internal):[A-Za-z0-9._:/@{}* -]{1,190}$"
+    },
+    "duration_ms": {
+      "description": "How long the operation took (fractions allowed).",
+      "type": "number",
+      "minimum": 0
+    },
+    "attempt": {
+      "description": "1 for the first try of a retried operation.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "outcome": {
+      "enum": [
+        "ok",
+        "refused",
+        "error",
+        "timeout",
+        "retry"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "code": {
+          "description": "The contract error code (CONVENTIONS \"Error codes\", a gRPC parity-error, a reply code): stale_owner, not_found, unavailable.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "kind": {
+          "description": "The error's type: a Java exception class, a Rust error enum variant, an errno name.",
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.$:<>]{0,127}$"
+        },
+        "message": {
+          "description": "The error's text, masked like any field.",
+          "type": "string",
+          "maxLength": 1024
+        },
+        "stack": {
+          "description": "Level error or fatal only. The whole stack in one JSON string: frames separated by \\n, causes as 'caused by: <kind>: <message>' lines, at most 30 frames per throwable, cut at 8192 characters with a final '...[truncated]'.",
+          "type": "string",
+          "maxLength": 8192
+        }
+      }
+    },
+    "code": {
+      "description": "Where the record was made, when the language gives it cheaply (Rust tracing metadata, C++ __FILE__/__LINE__); Java only at warn and above.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "description": "Relative to the repository root.",
+          "type": "string",
+          "maxLength": 256,
+          "pattern": "^[^/]"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "func": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    },
+    "trace_id": {
+      "description": "From the W3C traceparent of the work being done.",
+      "type": "string",
+      "pattern": "^(?!0{32}$)[0-9a-f]{32}$"
+    },
+    "span_id": {
+      "type": "string",
+      "pattern": "^(?!0{16}$)[0-9a-f]{16}$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "xsid": {
+      "description": "The cross-system call id: the interaction's id, one per customer call, the same in every service and on every leg (CONVENTIONS \"The xsid\"). Required on call-scoped events. UUIDv7, lowercase.",
+      "$ref": "#/$defs/uuid7"
+    },
+    "parent_xsid": {
+      "description": "The call that caused this one (a consult, a callback, an outbound call made from a call). Never equal to xsid.",
+      "$ref": "#/$defs/uuid7"
+    },
+    "interaction_id": {
+      "description": "Accepted while services move to xsid; equal to xsid when both are present.",
+      "$ref": "#/$defs/uuid"
+    },
+    "call_id": {
+      "description": "parity-voice-api's CPaaS call id (= the interaction id). Never a SIP Call-ID: that is attrs.sip_call_id, masked as a phone number.",
+      "$ref": "#/$defs/uuid"
+    },
+    "session_id": {
+      "description": "A session that isn't a call: an agent desktop session (gateway), a web session (frontend, admin-console), a checkout session (billing).",
+      "$ref": "#/$defs/opaque"
+    },
+    "leg_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "agent_id": {
+      "$ref": "#/$defs/opaque"
+    },
+    "queue_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    },
+    "entry_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "reservation_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "request_id": {
+      "description": "An HTTP or Kafka request's id (X-Request-Id, a request's id field).",
+      "$ref": "#/$defs/command"
+    },
+    "command_id": {
+      "description": "A command's id: interaction.commands id, a gRPC command_id.",
+      "$ref": "#/$defs/command"
+    },
+    "event_id": {
+      "description": "The Kafka event this record is about (published or consumed).",
+      "$ref": "#/$defs/uuid"
+    },
+    "op_id": {
+      "description": "0.16.0: the operation id, one per confirmed operator action (parity-cc-tools, admin-console's onboarding, or a system's own action such as an automatic rollback): the xsid of an operation, on every saga, event, command and record the action causes (CONVENTIONS \"The op_id\"). UUIDv7, lowercase.",
+      "$ref": "#/$defs/uuid7"
+    },
+    "saga_id": {
+      "description": "0.16.0: the saga the record is about (parity-rs's tenant routing sagas, parity-cc-tools' service-control sagas). UUIDv7.",
+      "$ref": "#/$defs/uuid7"
+    },
+    "parent_saga_id": {
+      "description": "0.16.0: the saga that started this one (a rollout's or a drain's unit move). UUIDv7.",
+      "$ref": "#/$defs/uuid7"
+    },
+    "bin": {
+      "$ref": "#/$defs/place"
+    },
+    "zone": {
+      "$ref": "#/$defs/place"
+    },
+    "cell": {
+      "$ref": "#/$defs/place"
+    },
+    "node": {
+      "description": "A media node (parity-ms / freeswitch host) id.",
+      "$ref": "#/$defs/opaque"
+    },
+    "leader_epoch": {
+      "$ref": "#/$defs/counter"
+    },
+    "owner_epoch": {
+      "$ref": "#/$defs/counter"
+    },
+    "repeat_count": {
+      "description": "Identical records (same event, error.code, error.kind and dedup key) held back since the last one written; this record stands for them.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "repeat_since": {
+      "description": "When the first held-back record was made (format of ts).",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$"
+    },
+    "decision": {
+      "$ref": "#/$defs/decision"
+    },
+    "attrs": {
+      "description": "The event's own fields (its catalogue entry names the required ones). Masked per class like everything else; at most 32 keys.",
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      }
+    }
+  },
+  "dependentRequired": {
+    "repeat_since": [
+      "repeat_count"
+    ],
+    "parent_xsid": [
+      "xsid"
+    ],
+    "from_state": [
+      "to_state"
+    ],
+    "span_id": [
+      "trace_id"
+    ]
+  },
+  "unevaluatedProperties": false,
+  "$defs": {
+    "service": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,62}$"
+    },
+    "opaque": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "command": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+    },
+    "place": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "state": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
+    },
+    "counter": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "uuid7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "decision": {
+      "description": "Why a routing or optimizer decision came out as it did. Debug or trace level, or info with sampled: true (a sampled fraction, the rate in the service's catalogue entry). At most 4096 bytes serialized (contract-check). Candidates are the best few, not all: total says how many were considered.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "chosen"
+      ],
+      "properties": {
+        "kind": {
+          "description": "What was decided: agent.select, queue.select, weight.update, overflow.apply.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+          "maxLength": 64
+        },
+        "sampled": {
+          "type": "boolean"
+        },
+        "total": {
+          "description": "Candidates considered, including those not listed.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "chosen": {
+          "description": "The chosen candidate's id; null when nothing was chosen (reason says why).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/command"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "description": "A short code-like phrase: best_score, only_eligible, sla_breach_override, no_eligible_agent.",
+          "type": "string",
+          "maxLength": 128
+        },
+        "candidates": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/command"
+              },
+              "score": {
+                "type": "number"
+              },
+              "parts": {
+                "description": "The score's terms by name (skill_match, idle_s, proficiency, sla_pressure).",
+                "type": "object",
+                "maxProperties": 12,
+                "propertyNames": {
+                  "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "eligible": {
+                "type": "boolean"
+              },
+              "reason": {
+                "description": "Why it lost or was ineligible.",
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

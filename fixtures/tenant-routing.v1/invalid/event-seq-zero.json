@@ -1,0 +1,31 @@
+{
+  "description": "seq starts at 1",
+  "kind": "routing_ops",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reject",
+  "record": {
+    "topic": "tenant.routing.events.eu1a",
+    "key": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "acme"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0193a1b2-c3d4-7e5f-ba6b-7c8d9e0f1a3a",
+      "type": "saga.state_changed",
+      "at_ms": 1793000000000,
+      "zone": "eu1a",
+      "tenant_id": "acme",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "seq": 0,
+      "kind": "unit_move",
+      "from_state": "fencing",
+      "to_state": "switching"
+    }
+  }
+}

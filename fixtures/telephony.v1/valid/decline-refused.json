@@ -1,0 +1,206 @@
+{
+  "description": "IE refuses an arrival without claiming it (its tenant check failed); the offered replica acknowledges the tombstone",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.telephony.v1",
+  "pins": [
+    "coverage",
+    "D5"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "incarnation": "0192f700-0000-7000-8000-000000000001",
+    "node_id": "media-1",
+    "version": "tc-test",
+    "bins": [
+      "bin-a",
+      "bin-b"
+    ],
+    "replicas": [
+      {
+        "bin": "bin-a",
+        "replica_id": "ie-bin-a-1"
+      },
+      {
+        "bin": "bin-a",
+        "replica_id": "ie-bin-a-2"
+      },
+      {
+        "bin": "bin-b",
+        "replica_id": "ie-bin-b-1"
+      }
+    ],
+    "owners": [],
+    "free_legs": 1000
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.telephony.v1.TelephonyService/Watch",
+      "message": "parity.telephony.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.telephony.v1.WatchResponse",
+        "body": {
+          "incarnation": "0192f700-0000-7000-8000-000000000001",
+          "node_id": "media-1",
+          "at_ms": "1792800000000",
+          "node_status": {
+            "free_legs": 1000,
+            "version": "tc-test",
+            "capabilities": [
+              "dtmf_actions",
+              "recording_null_sink"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "op": "inject",
+      "what": "arrival",
+      "args": {
+        "leg_id": "0192f6a1-8000-7000-8000-000000000001",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "tenant_id": "acme",
+        "bin": "bin-a",
+        "called_number": "+447700900100",
+        "caller_number": "+447700900123",
+        "sip_call_id": "a84b4c76e66710@carrier.example",
+        "trunk_id": "carrier-a"
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.telephony.v1.WatchResponse",
+      "body": {
+        "incarnation": "0192f700-0000-7000-8000-000000000001",
+        "node_id": "media-1",
+        "delivery_seq": "1",
+        "session": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "0"
+        },
+        "at_ms": "1792800000000",
+        "arrived": {
+          "bin": "bin-a",
+          "leg_id": "0192f6a1-8000-7000-8000-000000000001",
+          "sip_call_id": "a84b4c76e66710@carrier.example",
+          "called_number": "+447700900100",
+          "caller_number": "+447700900123",
+          "attempt": 1,
+          "deadline_ms": "1792800005000",
+          "trunk_id": "carrier-a"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.telephony.v1.TelephonyService/DeclineArrival",
+      "message": "parity.telephony.v1.DeclineArrivalRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "replica_id": "ie-bin-a-1",
+        "leg_id": "0192f6a1-8000-7000-8000-000000000001",
+        "reason": "DECLINE_REASON_REFUSED",
+        "sip_status": 403
+      },
+      "expect": {
+        "message": "parity.telephony.v1.DeclineArrivalResponse",
+        "body": {
+          "rejected": true
+        }
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.telephony.v1.WatchResponse",
+      "body": {
+        "incarnation": "0192f700-0000-7000-8000-000000000001",
+        "node_id": "media-1",
+        "delivery_seq": "2",
+        "session": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "0"
+        },
+        "at_ms": "1792800000000",
+        "leg": {
+          "leg_id": "0192f6a1-8000-7000-8000-000000000001",
+          "role": "LEG_ROLE_CUSTOMER",
+          "state": "LEG_STATE_ENDED",
+          "cause": "END_CAUSE_DECLINED",
+          "sip_status": 403,
+          "ended_by": "ENDED_BY_COMMAND"
+        }
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.telephony.v1.WatchResponse",
+      "body": {
+        "incarnation": "0192f700-0000-7000-8000-000000000001",
+        "node_id": "media-1",
+        "delivery_seq": "3",
+        "session": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "0"
+        },
+        "at_ms": "1792800000000",
+        "session_ended": {
+          "reason": "SESSION_END_REASON_ARRIVAL_DECLINED",
+          "sip_status": 403
+        }
+      }
+    },
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.telephony.v1.TelephonyService/Acknowledge",
+      "message": "parity.telephony.v1.AcknowledgeRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "acks": [
+          {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "0",
+            "replica_id": "ie-bin-a-1",
+            "acked_delivery_seq": "3",
+            "acked_incarnation": "0192f700-0000-7000-8000-000000000001"
+          }
+        ]
+      },
+      "expect": {
+        "message": "parity.telephony.v1.AcknowledgeResponse",
+        "body": {}
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "description": "No tenants: a new platform",
+  "kind": "tenant_maps",
+  "writer_valid": true,
+  "file": {
+    "schema_version": 1,
+    "tenants": []
+  }
+}

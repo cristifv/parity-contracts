@@ -1,0 +1,23 @@
+{
+  "description": "A reply_to that isn't replies.*: never answered",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "schema",
+    "bad_reply_to"
+  ],
+  "reader": "dlt",
+  "record": {
+    "topic": "billing.web.requests",
+    "key": "parity-frontend-1:get-catalog-0001",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "get_catalog",
+      "id": "parity-frontend-1:get-catalog-0001",
+      "reply_to": "billing.entitlements"
+    }
+  }
+}

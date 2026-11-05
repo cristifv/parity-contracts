@@ -1,0 +1,33 @@
+{
+  "description": "error.stack on a warn record.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "stack_level"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-interaction-engine.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "warn",
+      "service": "parity-interaction-engine",
+      "version": "0.6.0+a1b2c3d",
+      "instance": "ie-b0-0",
+      "seq": 101,
+      "event": "routing.rpc_failed",
+      "msg": "routing call failed; retrying",
+      "op": "parity.routing.v1.RoutingService/Enqueue",
+      "attempt": 2,
+      "outcome": "retry",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "error": {
+        "code": "unavailable",
+        "stack": "at ie_routing_client::client::enqueue"
+      }
+    }
+  ]
+}

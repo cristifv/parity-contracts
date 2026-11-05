@@ -1,0 +1,50 @@
+{
+  "description": "start_rollout on ops",
+  "kind": "routing_ops",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.routing.ops.requests.eu1a",
+    "key": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "start_rollout",
+      "id": "cct-1:start_rollout-0001",
+      "reply_to": "replies.parity-cc-tools",
+      "zone": "eu1a",
+      "release": "1.9.0",
+      "unit": "bin-c",
+      "advance": "manual",
+      "plan": {
+        "rings": [
+          {
+            "name": "test",
+            "select": "test"
+          },
+          {
+            "name": "five",
+            "select": {
+              "percent": 5
+            }
+          }
+        ],
+        "max_parallel": 10
+      },
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "actor": {
+        "sub": "5f0c2a9e-1b2c-4d3e-8f40-123456789abc",
+        "username": "jdoe",
+        "roles": [
+          "ops"
+        ]
+      },
+      "reason": "Move acme to the previous release for a support case",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c"
+    }
+  }
+}

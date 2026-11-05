@@ -1,0 +1,16 @@
+{
+  "description": "The tenant never comes from a frame",
+  "kind": "ws",
+  "writer_valid": false,
+  "direction": "to_gateway",
+  "frame": {
+    "v": 1,
+    "type": "set_state",
+    "id": "0192f6a1-c000-7aaa-8bbb-000000000001",
+    "state": "ready",
+    "tenant_id": "globex"
+  },
+  "violates": [
+    "schema"
+  ]
+}

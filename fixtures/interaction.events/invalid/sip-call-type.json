@@ -1,0 +1,26 @@
+{
+  "description": "signal-detection's old sip_call (C4): not an IE event; only IE writes the topic",
+  "kind": "kafka",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "ignore",
+  "record": {
+    "topic": "interaction.events",
+    "key": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "headers": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "type": "sip_call",
+      "sip_call_id": "a84b4c76e66710@pbx.carrier.example",
+      "at_ms": 1792800001500
+    }
+  }
+}

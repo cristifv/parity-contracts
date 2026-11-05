@@ -1,0 +1,35 @@
+{
+  "description": "The agent's leg hung up",
+  "kind": "kafka",
+  "writer_valid": true,
+  "violates": [],
+  "reader": "apply",
+  "record": {
+    "topic": "interaction.events",
+    "key": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "headers": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-7c40-7010-8000-000000000010",
+      "type": "leg_removed",
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "tenant_id": "acme",
+      "seq": 13,
+      "owner_epoch": 1042,
+      "at_ms": 1792800013000,
+      "channel": "voice",
+      "direction": "inbound",
+      "cpaas": false,
+      "customer_key": "ck_3q2-xV9mZr8LbN0pQ7sT1w",
+      "leg_id": "0192f6a1-9200-7eee-8fff-000000000002",
+      "role": "agent",
+      "sip_call_id": "ie-0192f6a1-9200-7eee-8fff-000000000002",
+      "hangup_cause": "NORMAL_CLEARING"
+    }
+  }
+}

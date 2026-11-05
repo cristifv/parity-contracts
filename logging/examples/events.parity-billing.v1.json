@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "service": "parity-billing",
+  "description": "Starter catalogue for parity-billing (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-billing.v1.json; the service owns it from then on.",
+  "events": {
+    "webhook.received": {
+      "description": "A Stripe webhook was verified and stored (attrs.stripe_event_type).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "request_id"
+      ],
+      "attrs": [
+        "stripe_event_type"
+      ]
+    },
+    "signup.state_changed": {
+      "description": "A signup's saga moved.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "request_id"
+      ],
+      "attrs": [
+        "signup_id"
+      ],
+      "transition": true
+    },
+    "entitlement.published": {
+      "description": "A tenant's entitlements were published.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id",
+        "event_id"
+      ]
+    },
+    "payment.failed": {
+      "description": "A payment failed (error.code).",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "tenant_id",
+        "error"
+      ],
+      "attrs": [
+        "billing_account_id"
+      ]
+    }
+  }
+}

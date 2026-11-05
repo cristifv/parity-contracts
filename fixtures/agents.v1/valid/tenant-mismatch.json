@@ -1,0 +1,64 @@
+{
+  "description": "The metadata's tenant differs from the request's",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.agents.v1",
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "offer_timeout_ms": "15000",
+    "grace_ms": "60000",
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "state": "NOT_READY",
+        "reason_code": "login"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/Watch",
+      "message": "parity.agents.v1.WatchRequest",
+      "body": {
+        "replica_id": "gw-bin-a-1",
+        "bin": "bin-a"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "expect": {
+        "message": "parity.agents.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.agents.v1.AgentService/AttachAgent",
+      "message": "parity.agents.v1.AttachAgentRequest",
+      "body": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "replica_id": "gw-bin-a-1",
+        "session_id": "0192f6a1-5000-7aaa-8bbb-000000000001",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example"
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "globex"
+      },
+      "expect": {
+        "status": "INVALID_ARGUMENT",
+        "parity_error": "tenant_mismatch"
+      }
+    }
+  ]
+}

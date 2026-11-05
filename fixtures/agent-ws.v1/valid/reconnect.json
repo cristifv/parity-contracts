@@ -1,0 +1,12 @@
+{
+  "description": "Drain",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_desktop",
+  "frame": {
+    "v": 1,
+    "type": "reconnect",
+    "seq": 7,
+    "after_ms": 4210
+  }
+}

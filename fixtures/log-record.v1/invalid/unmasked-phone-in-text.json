@@ -1,0 +1,33 @@
+{
+  "description": "A number inside free text (error.message).",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "unmasked_phone"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-telephony-controller.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "warn",
+      "service": "parity-telephony-controller",
+      "version": "0.4.1",
+      "instance": "tc-media-1",
+      "incarnation": "tc-7f3a",
+      "seq": 101,
+      "event": "command.failed",
+      "msg": "command failed",
+      "op": "parity.telephony.v1.TelephonyService/RingLeg",
+      "command_id": "ie-0:0192f3c1-6f00-7000-8000-00000000c001",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "error": {
+        "code": "invalid_request",
+        "message": "no route for sip:+447700900123@carrier.example"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "description": "create_signup_checkout's answer",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.parity-frontend",
+    "key": "parity-frontend-1:create-signup-checkout-0001",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "parity-frontend-1:create-signup-checkout-0001",
+      "ok": true,
+      "result": {
+        "signup_id": "0192f6a1-e000-7aaa-8bbb-00000000a001",
+        "kind": "trial",
+        "url": "https://checkout.stripe.com/c/pay/cs_test_a1b2c3",
+        "expires_at_ms": 1792886400000
+      }
+    }
+  }
+}

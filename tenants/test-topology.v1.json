@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "description": "The topology of the shared test tenants (tenants/test-tenants.v1.json): region eu1 holds zone eu1a with three deployment units; region eu2 holds zone eu2a, eu1a's failover zone. The test tenants' records predate 2026-11-03: they hold the region in zone, home_zone and failover_zone and the zone in cell.",
+  "regions": {
+    "eu1": {
+      "residency": "eu",
+      "default_zone": "eu1a"
+    },
+    "eu2": {
+      "residency": "eu",
+      "default_zone": "eu2a"
+    }
+  },
+  "zones": {
+    "eu1a": {
+      "region": "eu1",
+      "failover": "eu2a",
+      "open": true,
+      "state": "active",
+      "capacity_seats": 20000,
+      "fill_limit": 0.8,
+      "default_media_track": "blue",
+      "media_tracks": [
+        "blue",
+        "green"
+      ],
+      "handover_services": [],
+      "units": {
+        "bin-a": {
+          "namespace": "bin-a",
+          "release": "1.8.3",
+          "ready": true,
+          "role": "live",
+          "scale": {
+            "full": 3,
+            "minimum": 1
+          }
+        },
+        "bin-b": {
+          "namespace": "bin-b",
+          "release": "1.8.3",
+          "ready": true,
+          "role": "previous",
+          "scale": {
+            "full": 3,
+            "minimum": 1
+          }
+        },
+        "bin-c": {
+          "namespace": "bin-c",
+          "release": "1.9.0",
+          "ready": true,
+          "role": "empty",
+          "scale": {
+            "full": 3,
+            "minimum": 1,
+            "per_ring_tenants": 50
+          }
+        }
+      }
+    },
+    "eu2a": {
+      "region": "eu2",
+      "failover": "eu1a",
+      "open": true,
+      "state": "active",
+      "capacity_seats": 20000,
+      "fill_limit": 0.8,
+      "default_media_track": "blue",
+      "media_tracks": [
+        "blue"
+      ],
+      "units": {
+        "bin-a": {
+          "namespace": "bin-a",
+          "release": "1.8.3",
+          "ready": true,
+          "role": "live"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "description": "list_placements",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.requests",
+    "key": "admin-api-1:list_placements-0001",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "list_placements",
+      "id": "admin-api-1:list_placements-0001",
+      "reply_to": "replies.admin-console",
+      "after": "acme",
+      "limit": 50
+    }
+  }
+}

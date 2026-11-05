@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/tenant-routing/topology/v1.json",
+  "title": "parity-rs topology (0.16.0)",
+  "description": "The regions, zones (= cells) and deployment units (= bins) parity-rs places tenants on. Rendered by parity-deploy from its inventory (YAML or JSON); parity-rs refuses to start on an invalid file. Cross-field rules (contract-check, parity-rs): a region's default_zone is one of its zones; failover names another zone of the same residency; default_media_track is in media_tracks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "regions",
+    "zones"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "regions": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+        "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "residency",
+          "default_zone"
+        ],
+        "properties": {
+          "residency": {
+            "type": "string",
+            "pattern": "^[a-z]{2,8}$"
+          },
+          "default_zone": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+            "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+          },
+          "dedicated_zones": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "zones": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+        "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "region",
+          "open",
+          "capacity_seats",
+          "default_media_track",
+          "media_tracks",
+          "units"
+        ],
+        "properties": {
+          "region": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+            "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+          },
+          "failover": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+            "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+          },
+          "open": {
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "active",
+              "degraded",
+              "closed"
+            ]
+          },
+          "capacity_seats": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fill_limit": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "default_media_track": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+            "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+          },
+          "media_tracks": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            }
+          },
+          "handover_services": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,62}$"
+            }
+          },
+          "units": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [],
+              "properties": {
+                "namespace": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+                },
+                "release": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+                },
+                "ready": {
+                  "type": "boolean"
+                },
+                "role": {
+                  "enum": [
+                    "live",
+                    "canary",
+                    "previous",
+                    "empty",
+                    "draining",
+                    "failed"
+                  ]
+                },
+                "scale": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {
+                    "full": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "minimum": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000
+                    },
+                    "per_ring_tenants": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100000
+                    }
+                  }
+                }
+              },
+              "description": "A deployment unit (= bin). release, ready and role are the static observer's values (local-dev, tests) and the first start's roles; the Kubernetes observer reads release and readiness from the workloads' labels."
+            }
+          }
+        },
+        "description": "A zone (= cell): one complete stack inside a region."
+      }
+    }
+  }
+}

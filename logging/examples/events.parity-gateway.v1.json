@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "service": "parity-gateway",
+  "description": "Starter catalogue for parity-gateway (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-gateway.v1.json; the service owns it from then on.",
+  "events": {
+    "session.opened": {
+      "description": "An agent desktop's WebSocket session opened.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "agent_id",
+        "session_id"
+      ]
+    },
+    "session.closed": {
+      "description": "A desktop session closed (attrs.close_code).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "agent_id",
+        "session_id"
+      ],
+      "attrs": [
+        "close_code"
+      ]
+    },
+    "offer.delivered": {
+      "description": "An offer frame was written to the agent's desktop.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "agent_id",
+        "reservation_id",
+        "session_id"
+      ]
+    },
+    "offer.answered": {
+      "description": "The desktop answered an offer (attrs.answer: accept, reject).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "agent_id",
+        "reservation_id"
+      ],
+      "attrs": [
+        "answer"
+      ]
+    },
+    "frame.refused": {
+      "description": "A desktop frame was refused (error.code).",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "session_id",
+        "error"
+      ],
+      "dedup": {
+        "window_ms": 5000,
+        "key": [
+          "session_id"
+        ]
+      }
+    },
+    "routing.stream_lost": {
+      "description": "The Watch stream to the routing engine broke; reconnecting.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "bin"
+      ]
+    }
+  }
+}

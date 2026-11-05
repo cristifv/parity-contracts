@@ -1,0 +1,18 @@
+{
+  "description": "A key of no known kind",
+  "kind": "store",
+  "writer_valid": false,
+  "violates": [
+    "key_mismatch"
+  ],
+  "reader": "reject",
+  "record": {
+    "topic": "tenant.store.state",
+    "key": "tenant_number:+15550100100",
+    "headers": {
+      "schema_version": "1",
+      "revision": "9"
+    },
+    "value": null
+  }
+}

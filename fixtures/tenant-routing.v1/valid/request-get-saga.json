@@ -1,0 +1,21 @@
+{
+  "description": "get_saga on requests",
+  "kind": "routing_ops",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.routing.requests.eu1a",
+    "key": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "get_saga",
+      "id": "cct-1:get_saga-0001",
+      "reply_to": "replies.parity-cc-tools",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c"
+    }
+  }
+}

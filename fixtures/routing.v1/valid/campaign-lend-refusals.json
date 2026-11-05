@@ -1,0 +1,154 @@
+{
+  "description": "0.14.0: lending is refused, not deferred, when it would leave an open queue uncovered; another tenant's agent is unknown; an agent that isn't lent can't be reserved",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.routing.v1",
+  "pins": [
+    "PLAN 4.3 coverage",
+    "PLAN 4.3 tenant isolation"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme",
+      "globex"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      },
+      {
+        "tenant_id": "globex",
+        "queue_id": "sales"
+      }
+    ],
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example",
+        "queues": [
+          "sales"
+        ],
+        "ready_since_ms": "1792799980000"
+      },
+      {
+        "tenant_id": "globex",
+        "agent_id": "agent-9e8d",
+        "agent_contact": "sip:agent-9e8d@globex.agents.example",
+        "queues": [
+          "sales"
+        ],
+        "ready_since_ms": "1792799980000"
+      }
+    ],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/LendAgents",
+      "message": "parity.routing.v1.LendAgentsRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "campaign_id": "spring-renewals",
+          "owner_epoch": "2051",
+          "replica_id": "ie-bin-a-1"
+        },
+        "agent_ids": [
+          "agent-7f3a",
+          "agent-9e8d",
+          "agent-0000"
+        ]
+      },
+      "expect": {
+        "message": "parity.routing.v1.LendAgentsResponse",
+        "body": {
+          "agents": [
+            {
+              "agent_id": "agent-7f3a",
+              "result": "LEND_RESULT_COVERAGE"
+            },
+            {
+              "agent_id": "agent-9e8d",
+              "result": "LEND_RESULT_UNKNOWN_AGENT"
+            },
+            {
+              "agent_id": "agent-0000",
+              "result": "LEND_RESULT_UNKNOWN_AGENT"
+            }
+          ],
+          "existing": false
+        }
+      },
+      "note": "agent-7f3a is sales' only agent; agent-9e8d is globex's"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReserveAgent",
+      "message": "parity.routing.v1.ReserveAgentRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6d0-3a1b-7c2d-8e3f-405162738495",
+          "owner_epoch": "1082",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "campaign": {
+          "tenant_id": "acme",
+          "campaign_id": "spring-renewals",
+          "owner_epoch": "2051",
+          "replica_id": "ie-bin-a-1"
+        },
+        "agent_id": "agent-7f3a"
+      },
+      "expect": {
+        "status": "FAILED_PRECONDITION",
+        "parity_error": "agent_not_lent"
+      }
+    }
+  ]
+}

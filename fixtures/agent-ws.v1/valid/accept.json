@@ -1,0 +1,12 @@
+{
+  "description": "Accept an offer",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_gateway",
+  "frame": {
+    "v": 1,
+    "type": "accept",
+    "id": "0192f6a1-c000-7aaa-8bbb-000000000001",
+    "offer_id": "0192f6a1-6000-7aaa-8bbb-000000000001"
+  }
+}

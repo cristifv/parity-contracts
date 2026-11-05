@@ -1,0 +1,45 @@
+{
+  "description": "More seats than any plan has: bad_request",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "billing.web.requests",
+    "key": "0192f6a1-e000-7aaa-8bbb-00000000a001",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "start_signup",
+      "id": "parity-frontend-1:start-signup-0001",
+      "reply_to": "replies.parity-frontend",
+      "signup_id": "0192f6a1-e000-7aaa-8bbb-00000000a001",
+      "email": "pat@acme-new.example",
+      "name": "Pat Example",
+      "company": "Acme New Ltd",
+      "country": "DE",
+      "vat_id": "DE123456789",
+      "slug": "acme-new",
+      "slug_review": false,
+      "region": "eu1",
+      "plan": {
+        "kind": "trial",
+        "plan_id": "trial",
+        "seats": 51
+      },
+      "locale": "en",
+      "consents": {
+        "terms": "2026-10",
+        "privacy": "2026-10",
+        "dpa": "2026-10",
+        "aup": "2026-10"
+      },
+      "consented_at_ms": 1792800000000,
+      "marketing_opt_in": false
+    }
+  }
+}

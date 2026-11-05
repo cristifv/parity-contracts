@@ -1,0 +1,1132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/agent-ws/to-desktop/v1.json",
+  "title": "agent-ws.v1 frames to desktop",
+  "description": "Gateway -> desktop. No phone number and no digit in any frame (GW-010). A desktop ignores a frame type it doesn't know (0.11.0, CR-015): new kinds are additive.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/snapshot"
+    },
+    {
+      "$ref": "#/$defs/agent_state"
+    },
+    {
+      "$ref": "#/$defs/offer"
+    },
+    {
+      "$ref": "#/$defs/offer_revoked"
+    },
+    {
+      "$ref": "#/$defs/reserved"
+    },
+    {
+      "$ref": "#/$defs/call"
+    },
+    {
+      "$ref": "#/$defs/wrap_up"
+    },
+    {
+      "$ref": "#/$defs/result"
+    },
+    {
+      "$ref": "#/$defs/ice_servers"
+    },
+    {
+      "$ref": "#/$defs/sip_credentials"
+    },
+    {
+      "$ref": "#/$defs/reconnect"
+    },
+    {
+      "$ref": "#/$defs/ping"
+    },
+    {
+      "$ref": "#/$defs/queues"
+    }
+  ],
+  "$defs": {
+    "snapshot": {
+      "description": "First frame after auth on every connection: state is authoritative, nothing is replayed",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "session_id",
+        "agent",
+        "reservations",
+        "calls",
+        "wrap_ups"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "snapshot"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "state_version",
+            "mode"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "logged_out",
+                "not_ready",
+                "ready",
+                "offered",
+                "reserved",
+                "on_call",
+                "wrap_up"
+              ]
+            },
+            "reason_code": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+            },
+            "pending_target": {
+              "enum": [
+                "ready",
+                "not_ready",
+                "logged_out"
+              ]
+            },
+            "pending_reason_code": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+            },
+            "since_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "state_version": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mode": {
+              "enum": [
+                "inbound",
+                "campaign"
+              ]
+            },
+            "campaign_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "queues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "queue_id",
+                  "tier"
+                ],
+                "properties": {
+                  "queue_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                  },
+                  "tier": {
+                    "enum": [
+                      "primary",
+                      "secondary"
+                    ]
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  },
+                  "since_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "pending_queues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "queue_id",
+                  "tier"
+                ],
+                "properties": {
+                  "queue_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                  },
+                  "tier": {
+                    "enum": [
+                      "primary",
+                      "secondary"
+                    ]
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  },
+                  "since_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "queues_version": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "offer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "offer_id",
+            "interaction_id",
+            "expires_at_ms"
+          ],
+          "properties": {
+            "offer_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "interaction_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "channel": {
+              "enum": [
+                "voice",
+                "chat",
+                "sms",
+                "email",
+                "social"
+              ]
+            },
+            "queue_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+            },
+            "expires_at_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "consult": {
+              "type": "boolean"
+            },
+            "direct": {
+              "type": "boolean"
+            },
+            "tier": {
+              "enum": [
+                "primary",
+                "secondary"
+              ]
+            },
+            "callback": {
+              "type": "boolean"
+            }
+          }
+        },
+        "reservations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reservation_id",
+              "interaction_id"
+            ],
+            "properties": {
+              "reservation_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "interaction_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "origin": {
+                "enum": [
+                  "inbound",
+                  "campaign",
+                  "direct",
+                  "callback"
+                ]
+              },
+              "campaign_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              }
+            }
+          }
+        },
+        "calls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "interaction_id",
+              "state",
+              "managed"
+            ],
+            "properties": {
+              "interaction_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "reservation_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "state": {
+                "enum": [
+                  "ringing",
+                  "connected",
+                  "ended"
+                ]
+              },
+              "held": {
+                "type": "boolean"
+              },
+              "muted": {
+                "type": "boolean"
+              },
+              "consulting": {
+                "type": "boolean"
+              },
+              "recording": {
+                "enum": [
+                  "off",
+                  "on",
+                  "paused"
+                ]
+              },
+              "managed": {
+                "type": "boolean"
+              },
+              "parties": {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "role",
+                    "leg_id",
+                    "live"
+                  ],
+                  "properties": {
+                    "role": {
+                      "enum": [
+                        "customer",
+                        "agent",
+                        "supervisor",
+                        "external"
+                      ]
+                    },
+                    "agent_id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                    },
+                    "leg_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "live": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "wrap_ups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reservation_id",
+              "ends_at_ms"
+            ],
+            "properties": {
+              "reservation_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "interaction_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "ends_at_ms": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "agent_state": {
+      "description": "RE StateChanged",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "agent"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "agent_state"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "state_version",
+            "mode"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "logged_out",
+                "not_ready",
+                "ready",
+                "offered",
+                "reserved",
+                "on_call",
+                "wrap_up"
+              ]
+            },
+            "reason_code": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+            },
+            "pending_target": {
+              "enum": [
+                "ready",
+                "not_ready",
+                "logged_out"
+              ]
+            },
+            "pending_reason_code": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+            },
+            "since_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "state_version": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mode": {
+              "enum": [
+                "inbound",
+                "campaign"
+              ]
+            },
+            "campaign_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "queues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "queue_id",
+                  "tier"
+                ],
+                "properties": {
+                  "queue_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                  },
+                  "tier": {
+                    "enum": [
+                      "primary",
+                      "secondary"
+                    ]
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  },
+                  "since_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "pending_queues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "queue_id",
+                  "tier"
+                ],
+                "properties": {
+                  "queue_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                  },
+                  "tier": {
+                    "enum": [
+                      "primary",
+                      "secondary"
+                    ]
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  },
+                  "since_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "queues_version": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "offer": {
+      "description": "RE Offer",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "offer_id",
+        "interaction_id",
+        "expires_at_ms"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "offer"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offer_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "interaction_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "channel": {
+          "enum": [
+            "voice",
+            "chat",
+            "sms",
+            "email",
+            "social"
+          ]
+        },
+        "queue_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+        },
+        "expires_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "consult": {
+          "type": "boolean"
+        },
+        "direct": {
+          "type": "boolean"
+        },
+        "tier": {
+          "enum": [
+            "primary",
+            "secondary"
+          ]
+        },
+        "callback": {
+          "type": "boolean"
+        }
+      }
+    },
+    "offer_revoked": {
+      "description": "RE OfferRevoked",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "offer_id",
+        "reason"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "offer_revoked"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offer_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "reason": {
+          "enum": [
+            "expired",
+            "caller_gone",
+            "detached",
+            "state_changed"
+          ]
+        }
+      }
+    },
+    "reserved": {
+      "description": "RE Reserved: the softphone may auto-answer this interaction's leg",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "reservation_id",
+        "interaction_id",
+        "origin"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "reserved"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reservation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "interaction_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "origin": {
+          "enum": [
+            "inbound",
+            "campaign",
+            "direct",
+            "callback"
+          ]
+        },
+        "campaign_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        }
+      }
+    },
+    "call": {
+      "description": "IE's view after Get, a control or an event",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "call"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "call"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "call": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "interaction_id",
+            "state",
+            "managed"
+          ],
+          "properties": {
+            "interaction_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "reservation_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "state": {
+              "enum": [
+                "ringing",
+                "connected",
+                "ended"
+              ]
+            },
+            "held": {
+              "type": "boolean"
+            },
+            "muted": {
+              "type": "boolean"
+            },
+            "consulting": {
+              "type": "boolean"
+            },
+            "recording": {
+              "enum": [
+                "off",
+                "on",
+                "paused"
+              ]
+            },
+            "managed": {
+              "type": "boolean"
+            },
+            "parties": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "role",
+                  "leg_id",
+                  "live"
+                ],
+                "properties": {
+                  "role": {
+                    "enum": [
+                      "customer",
+                      "agent",
+                      "supervisor",
+                      "external"
+                    ]
+                  },
+                  "agent_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "leg_id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                  },
+                  "live": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "wrap_up": {
+      "description": "RE WrapUpStarted",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "reservation_id",
+        "ends_at_ms"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "wrap_up"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reservation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "interaction_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "ends_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "result": {
+      "description": "The answer to a command",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "id",
+        "ok"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "result"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "retry"
+          ],
+          "properties": {
+            "code": {
+              "enum": [
+                "bad_request",
+                "not_found",
+                "not_your_call",
+                "invalid_state",
+                "offer_gone",
+                "call_unmanaged",
+                "unavailable",
+                "destination_not_allowed",
+                "rate_limited",
+                "conflict",
+                "invalid_transition"
+              ]
+            },
+            "retry": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "ice_servers": {
+      "description": "TURN REST credentials, renewed at half their lifetime",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "ice_servers",
+        "expires_at_ms"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ice_servers"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ice_servers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "urls"
+            ],
+            "properties": {
+              "urls": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "pattern": "^(stun|turn|turns):"
+                }
+              },
+              "username": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "credential": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "x-secret": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "sip_credentials": {
+      "description": "A short-lived SIP JWT bound to this session (opensips auth_jwt)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "uri",
+        "ws_servers",
+        "token",
+        "expires_at_ms"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "sip_credentials"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "uri": {
+          "type": "string",
+          "pattern": "^sip:"
+        },
+        "ws_servers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^wss?://"
+          }
+        },
+        "token": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "x-secret": true
+        },
+        "expires_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "reconnect": {
+      "description": "Drain or bin move: reconnect after after_ms",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "after_ms"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "reconnect"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "after_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30000
+        }
+      }
+    },
+    "ping": {
+      "description": "Every 15 s; two unanswered close the socket",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ping"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "queues": {
+      "description": "0.11.0: RE QueuesChanged: the agent's queues now and those waiting for its next offer (never mid-call); a weights-only change sends none",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "seq",
+        "queues",
+        "queues_version",
+        "reason"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "queues"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "queues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "queue_id",
+              "tier"
+            ],
+            "properties": {
+              "queue_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "tier": {
+                "enum": [
+                  "primary",
+                  "secondary"
+                ]
+              },
+              "pinned": {
+                "type": "boolean"
+              },
+              "since_ms": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "pending_queues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "queue_id",
+              "tier"
+            ],
+            "properties": {
+              "queue_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "tier": {
+                "enum": [
+                  "primary",
+                  "secondary"
+                ]
+              },
+              "pinned": {
+                "type": "boolean"
+              },
+              "since_ms": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "queues_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "enum": [
+            "login",
+            "optimizer",
+            "supervisor_pin",
+            "supervisor_unpin",
+            "config",
+            "mode_change",
+            "fallback",
+            "unspecified"
+          ]
+        }
+      }
+    }
+  }
+}

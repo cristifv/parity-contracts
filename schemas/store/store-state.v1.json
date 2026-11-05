@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/store-state/v1.json",
+  "title": "tenant.store.state, schema_version 1",
+  "description": "The compacted map every local copy reads from the start (the snapshot) and then follows (the changes). Keys: tenant:<tenant_id>, number:<e164>, sip_domain:<domain>; the value's kind and id match the key. A null value is a tombstone: the key is gone. Headers schema_version and revision (on tombstones too, so a copy knows the revision of a removal), and tenant_id on non-null values.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/tenant"
+    },
+    {
+      "$ref": "#/$defs/number"
+    },
+    {
+      "$ref": "#/$defs/sip_domain"
+    }
+  ],
+  "$defs": {
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "home_zone",
+        "failover_zone",
+        "zone",
+        "cell",
+        "deployment_unit",
+        "media_track",
+        "version",
+        "updated_at_ms"
+      ],
+      "properties": {
+        "home_zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "failover_zone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "cell": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "deployment_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+        },
+        "media_track": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "tenant": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "tenant_id",
+        "name",
+        "tier",
+        "parent",
+        "version",
+        "placement",
+        "revision"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The store-wide change counter: one value per committed change, in commit order"
+        },
+        "kind": {
+          "const": "tenant"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\u0000-\u001f]+$"
+        },
+        "tier": {
+          "enum": [
+            "small",
+            "mid",
+            "enterprise"
+          ]
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "placement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/placement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "number": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "number",
+        "tenant_id",
+        "revision"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The store-wide change counter: one value per committed change, in commit order"
+        },
+        "kind": {
+          "const": "number"
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-pii": "phone"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sip_domain": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "domain",
+        "tenant_id",
+        "revision"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The store-wide change counter: one value per committed change, in commit order"
+        },
+        "kind": {
+          "const": "sip_domain"
+        },
+        "domain": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "description": "End wrap-up",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_gateway",
+  "frame": {
+    "v": 1,
+    "type": "wrap_up_done",
+    "id": "0192f6a1-c000-7aaa-8bbb-000000000001",
+    "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+    "disposition_code": "sale"
+  }
+}

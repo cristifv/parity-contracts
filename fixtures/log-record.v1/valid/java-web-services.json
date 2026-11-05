@@ -1,0 +1,113 @@
+{
+  "description": "Java web and Kafka services: frontend, billing, store, admin-console (a tenant user opening a call by its xsid).",
+  "kind": "log",
+  "writer_valid": true,
+  "violates": [],
+  "catalogues": [
+    "logging/examples/events.parity-frontend.v1.json",
+    "logging/examples/events.parity-billing.v1.json",
+    "logging/examples/events.parity-store.v1.json",
+    "logging/examples/events.parity-admin-console.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-frontend",
+      "version": "0.1.4",
+      "instance": "frontend-0",
+      "seq": 101,
+      "event": "http.request",
+      "msg": "request served",
+      "component": "parity.frontend.web.SignupController",
+      "thread": "tomcat-handler-4",
+      "op": "POST /signup",
+      "request_id": "req-01JC2W8Q7ZK3",
+      "outcome": "ok",
+      "duration_ms": 45,
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "span_id": "4d5e6f708192a3b4",
+      "attrs": {
+        "status": 303
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.001Z",
+      "level": "info",
+      "service": "parity-frontend",
+      "version": "0.1.4",
+      "instance": "frontend-0",
+      "seq": 102,
+      "event": "signup.submitted",
+      "msg": "signup submitted",
+      "component": "parity.frontend.signup.Signups",
+      "request_id": "req-01JC2W8Q7ZK3",
+      "attrs": {
+        "signup_id": "0192f3c2-0000-7000-8000-0000000051a1",
+        "email": "[email]"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.801Z",
+      "level": "info",
+      "service": "parity-billing",
+      "version": "0.1.3",
+      "instance": "billing-0",
+      "seq": 101,
+      "event": "webhook.received",
+      "msg": "stripe webhook received",
+      "component": "parity.billing.stripe.Webhooks",
+      "request_id": "req-01JC2W9B4M1X",
+      "attrs": {
+        "stripe_event_type": "invoice.paid",
+        "stripe_event_id": "evt_1QAbCdEfGh"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.821Z",
+      "level": "info",
+      "service": "parity-billing",
+      "version": "0.1.3",
+      "instance": "billing-0",
+      "seq": 102,
+      "event": "entitlement.published",
+      "msg": "entitlements published",
+      "component": "parity.billing.entitlements.Publisher",
+      "tenant_id": "acme",
+      "event_id": "0192f3c1-6e00-7000-8000-0000000ee001"
+    },
+    {
+      "ts": "2026-11-01T10:00:00.851Z",
+      "level": "info",
+      "service": "parity-store",
+      "version": "0.2.0",
+      "instance": "store-0",
+      "seq": 101,
+      "event": "request.applied",
+      "msg": "request applied",
+      "component": "parity.store.requests.Applier",
+      "tenant_id": "acme",
+      "request_id": "console-0:0192f3c2-1000-7000-8000-000000000001",
+      "op": "tenant.store.requests:set_queue",
+      "outcome": "ok",
+      "duration_ms": 7
+    },
+    {
+      "ts": "2026-11-01T10:01:00.851Z",
+      "level": "info",
+      "service": "parity-admin-console",
+      "version": "0.2.0",
+      "instance": "console-0",
+      "seq": 101,
+      "event": "call.details_viewed",
+      "msg": "call details viewed",
+      "component": "parity.adminconsole.calls.CallDetails",
+      "session_id": "sess-8c1f",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "attrs": {
+        "user_id": "u-81"
+      }
+    }
+  ]
+}

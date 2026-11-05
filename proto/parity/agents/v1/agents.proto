@@ -1,0 +1,548 @@
+syntax = "proto3";
+
+// parity-gateway's agents module <-> routing-engine: agent sessions, state, offers, wrap-up
+// (parity-gateway PLAN.md, contract 2; CONVENTIONS.md "The agents contract").
+// gRPC metadata: tenant-id on every per-agent RPC (equal to the request's tenant_id), traceparent
+// always. Clients: the mTLS identity parity-gateway.<bin>. Errors: the canonical status plus the
+// parity-error trailer (ErrorCode, lowercased, without its prefix).
+package parity.agents.v1;
+
+option java_multiple_files = true;
+option java_package = "parity.contracts.agents.v1";
+
+// Served by the bin's routing-engine leader; a standby answers UNAVAILABLE/not_leader with
+// parity-leader. RE owns agent state, offers, reservations, wrap-up and the mode flag.
+service AgentService {
+  // Attaches a desktop session to a gateway replica, superseding any older attachment of the
+  // agent; repeat-safe by session_id (existing: true). Returns RE's view of the agent.
+  rpc AttachAgent(AttachAgentRequest) returns (AttachAgentResponse);
+  // Detaches a session; a no-op (applied: false) when a newer attachment exists.
+  rpc DetachAgent(DetachAgentRequest) returns (DetachAgentResponse);
+  // Asks for ready, not ready or logged out; pending while the agent is reserved, on a call or
+  // in wrap-up.
+  rpc SetState(SetStateRequest) returns (SetStateResponse);
+  // Accepts or rejects an offer; the first answer per offer wins.
+  rpc AnswerOffer(AnswerOfferRequest) returns (AnswerOfferResponse);
+  // Ends wrap-up for a reservation with its disposition; repeat-safe by reservation_id.
+  rpc EndWrapUp(EndWrapUpRequest) returns (EndWrapUpResponse);
+  // Acknowledges Watch messages, batched (at most 50 ms or 500 acks per request).
+  rpc Acknowledge(AcknowledgeRequest) returns (AcknowledgeResponse);
+  // One stream per gateway replica, carrying the messages of the agents attached to it; the
+  // newest stream of a replica_id wins (stream_superseded). Heartbeat every 5 s.
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
+  // A supervisor forces an agent not ready or logged out (0.11.0). Unlike SetState it applies at
+  // once while the agent is RESERVED: the reservation is revoked (IE gets Revoke{forced_state} or
+  // Revoke{agent_logged_out}, the call goes back to its queue at its ordering time). On a call or in
+  // wrap-up it is pending, as SetState's: calls are never touched. Repeat-safe by command_id. The
+  // gateway authorizes the supervisor; RE checks only the tenant.
+  rpc ForceState(ForceStateRequest) returns (ForceStateResponse);
+}
+
+// An agent's state in RE.
+enum AgentState {
+  // Unknown.
+  AGENT_STATE_UNSPECIFIED = 0;
+  // Logged out: no offers.
+  AGENT_STATE_LOGGED_OUT = 1;
+  // Not ready, with a reason_code: no offers.
+  AGENT_STATE_NOT_READY = 2;
+  // Ready: offers may come.
+  AGENT_STATE_READY = 3;
+  // An offer is waiting for the agent's answer.
+  AGENT_STATE_OFFERED = 4;
+  // Reserved for an interaction; the agent's leg is being placed.
+  AGENT_STATE_RESERVED = 5;
+  // On a call.
+  AGENT_STATE_ON_CALL = 6;
+  // In wrap-up after a call.
+  AGENT_STATE_WRAP_UP = 7;
+}
+
+// What the agent works on: one mode at a time (IE PLAN, campaign dialing).
+enum Mode {
+  // Unknown.
+  MODE_UNSPECIFIED = 0;
+  // Inbound calls routed by RE.
+  MODE_INBOUND = 1;
+  // Lent to an outbound campaign (campaign_id); no inbound offers.
+  MODE_CAMPAIGN = 2;
+}
+
+// A state the agent asks for.
+enum TargetState {
+  // Unknown.
+  TARGET_STATE_UNSPECIFIED = 0;
+  // Ready.
+  TARGET_STATE_READY = 1;
+  // Not ready, with a reason_code.
+  TARGET_STATE_NOT_READY = 2;
+  // Logged out.
+  TARGET_STATE_LOGGED_OUT = 3;
+}
+
+// An offer's channel.
+enum Channel {
+  // Unknown.
+  CHANNEL_UNSPECIFIED = 0;
+  // Voice.
+  CHANNEL_VOICE = 1;
+  // Web chat.
+  CHANNEL_CHAT = 2;
+  // SMS.
+  CHANNEL_SMS = 3;
+  // Email.
+  CHANNEL_EMAIL = 4;
+  // Social messaging.
+  CHANNEL_SOCIAL = 5;
+}
+
+// Why RE reserved the agent.
+enum ReservationOrigin {
+  // Unknown.
+  RESERVATION_ORIGIN_UNSPECIFIED = 0;
+  // An inbound offer the agent accepted.
+  RESERVATION_ORIGIN_INBOUND = 1;
+  // A campaign call IE reserved the lent agent for (no offer).
+  RESERVATION_ORIGIN_CAMPAIGN = 2;
+  // A direct call to this agent.
+  RESERVATION_ORIGIN_DIRECT = 3;
+  // A callback.
+  RESERVATION_ORIGIN_CALLBACK = 4;
+}
+
+// Why a session detaches.
+enum DetachReason {
+  // Unknown.
+  DETACH_REASON_UNSPECIFIED = 0;
+  // The desktop's socket closed: the grace period starts.
+  DETACH_REASON_SOCKET_CLOSED = 1;
+  // The gateway replica is draining: the grace period starts.
+  DETACH_REASON_DRAIN = 2;
+  // The agent logged out.
+  DETACH_REASON_LOGOUT = 3;
+}
+
+// An answer to an offer.
+enum Decision {
+  // Unknown.
+  DECISION_UNSPECIFIED = 0;
+  // Accept.
+  DECISION_ACCEPT = 1;
+  // Reject.
+  DECISION_REJECT = 2;
+}
+
+// Why an offer was withdrawn.
+enum RevokeReason {
+  // Unknown.
+  REVOKE_REASON_UNSPECIFIED = 0;
+  // Not answered by expires_at_ms: the agent becomes not ready (missed_offer).
+  REVOKE_REASON_EXPIRED = 1;
+  // The caller hung up or the interaction left the queue.
+  REVOKE_REASON_CALLER_GONE = 2;
+  // The agent detached; re-offered elsewhere with its ordering time kept, no penalty.
+  REVOKE_REASON_DETACHED = 3;
+  // The agent asked for not ready or logout (counts as a reject).
+  REVOKE_REASON_STATE_CHANGED = 4;
+}
+
+// Why RE ended an attachment.
+enum DetachedReason {
+  // Unknown.
+  DETACHED_REASON_UNSPECIFIED = 0;
+  // A newer session of the agent attached (another tab or replica).
+  DETACHED_REASON_SUPERSEDED = 1;
+  // A supervisor logged the agent out.
+  DETACHED_REASON_FORCED_LOGOUT = 2;
+}
+
+// A queue's tier in an agent's active set (0.11.0). An agent takes calls from the queues of its
+// active set: a PRIMARY queue's calls at once, a SECONDARY queue's once the call has waited the
+// queue's secondary delay; any queue it is eligible for once a call waited past the queue's
+// escalation time.
+enum MembershipTier {
+  // Not in the active set (an escalated or a direct offer).
+  MEMBERSHIP_TIER_UNSPECIFIED = 0;
+  // Offered at once.
+  MEMBERSHIP_TIER_PRIMARY = 1;
+  // Offered once the call waited the queue's secondary delay.
+  MEMBERSHIP_TIER_SECONDARY = 2;
+}
+
+// Why an agent's queues changed (0.11.0).
+enum MembershipReason {
+  // Unknown.
+  MEMBERSHIP_REASON_UNSPECIFIED = 0;
+  // The agent logged in.
+  MEMBERSHIP_REASON_LOGIN = 1;
+  // RE's staffing plan moved the agent.
+  MEMBERSHIP_REASON_OPTIMIZER = 2;
+  // A supervisor pinned the agent (config.routing_pin).
+  MEMBERSHIP_REASON_SUPERVISOR_PIN = 3;
+  // A supervisor's pin ended (a tombstone, or its until_ms passed).
+  MEMBERSHIP_REASON_SUPERVISOR_UNPIN = 4;
+  // The tenant's configuration changed (membership, skills, config.routing).
+  MEMBERSHIP_REASON_CONFIG = 5;
+  // The tenant's routing mode changed (config.routing mode), or the agent's own (0.14.0: lent to a
+  // campaign, so no inbound queues; or returned to inbound).
+  MEMBERSHIP_REASON_MODE_CHANGE = 6;
+  // RE fell back to every member queue (no valid plan).
+  MEMBERSHIP_REASON_FALLBACK = 7;
+}
+
+// One queue of an agent's active set (0.11.0).
+message QueueMembership {
+  // The queue.
+  string queue_id = 1;
+  // Its tier.
+  MembershipTier tier = 2;
+  // True when a supervisor's pin set it.
+  bool pinned = 3;
+  // Since when the agent has the queue at this tier, epoch ms.
+  int64 since_ms = 4;
+}
+
+// The session an agent RPC acts for.
+message SessionRef {
+  // The tenant (a DNS label), equal to the tenant-id metadata.
+  string tenant_id = 1;
+  // The agent (an opaque id from the desktop's token, never an email).
+  string agent_id = 2;
+  // The session: a UUID the gateway made at login.
+  string session_id = 3;
+  // The attachment the session holds; below RE's current one: session_superseded.
+  uint64 attach_generation = 4;
+}
+
+// RE's view of an agent.
+message AgentView {
+  // The state.
+  AgentState state = 1;
+  // NOT_READY's reason: missed_offer, disconnected, or one of the tenant's codes.
+  string reason_code = 2;
+  // A state asked for while busy, applied when wrap-up ends; UNSPECIFIED when none.
+  TargetState pending_target = 3;
+  // The pending state's reason code.
+  string pending_reason_code = 4;
+  // When the state began, epoch ms.
+  int64 since_ms = 5;
+  // Goes up by one per change; the gateway drops an older view.
+  uint64 state_version = 6;
+  // Inbound or campaign (RE's flag; the gateway only shows it).
+  Mode mode = 7;
+  // The campaign, in MODE_CAMPAIGN.
+  string campaign_id = 8;
+  // The active set: the queues the agent takes calls from now (0.11.0).
+  repeated QueueMembership queues = 9;
+  // A new active set waiting for the agent's next offer: it applies when the agent is READY with
+  // no offer, NOT_READY or LOGGED_OUT, never during an offer or a call (0.11.0). Empty when none.
+  repeated QueueMembership pending_queues = 10;
+  // Goes up by one per change of queues or pending_queues (0.11.0).
+  uint64 queues_version = 11;
+}
+
+// An offer to the agent. No phone number.
+message Offer {
+  // The offer (UUID).
+  string offer_id = 1;
+  // The interaction offered.
+  string interaction_id = 2;
+  // Its channel.
+  Channel channel = 3;
+  // The queue it waited in; empty for a direct offer.
+  string queue_id = 4;
+  // True for a consult from another agent.
+  bool consult = 5;
+  // True for a call to this agent directly.
+  bool direct = 6;
+  // When the offer expires, epoch ms.
+  int64 expires_at_ms = 7;
+  // The queue's tier in the agent's active set when offered; UNSPECIFIED for a direct or an
+  // escalated offer (0.11.0).
+  MembershipTier tier = 8;
+  // True for a scheduled callback: RE asks IE to place it once the agent accepts (0.11.0).
+  bool callback = 9;
+}
+
+// A reservation of the agent for an interaction.
+message Reservation {
+  // The reservation (UUID).
+  string reservation_id = 1;
+  // The interaction; the agent's leg arrives with X-Parity-Interaction-Id equal to it.
+  string interaction_id = 2;
+  // Why.
+  ReservationOrigin origin = 3;
+  // The campaign, for RESERVATION_ORIGIN_CAMPAIGN.
+  string campaign_id = 4;
+  // By when IE must report an outcome, epoch ms.
+  int64 deadline_ms = 5;
+  // True once wrap-up started for it.
+  bool wrap_up = 6;
+  // When wrap-up ends by itself, epoch ms; 0 when not in wrap-up.
+  int64 wrap_up_ends_at_ms = 7;
+}
+
+// Attaches a session.
+message AttachAgentRequest {
+  // The tenant, from the token.
+  string tenant_id = 1;
+  // The agent, from the token.
+  string agent_id = 2;
+  // The gateway replica that holds the socket (its Watch stream's replica_id).
+  string replica_id = 3;
+  // The session (UUID); a repeat with the same one returns existing: true.
+  string session_id = 4;
+  // The softphone's SIP URI, built by the gateway from the token, never from the desktop.
+  string agent_contact = 5;
+}
+
+// The attachment and RE's view of the agent.
+message AttachAgentResponse {
+  // The new attachment; every later RPC of the session carries it.
+  uint64 attach_generation = 1;
+  // True for a repeat of the same session_id.
+  bool existing = 2;
+  // The agent's state.
+  AgentView agent = 3;
+  // The live offer, if any.
+  Offer offer = 4;
+  // The agent's reservations, wrap-ups included.
+  repeated Reservation reservations = 5;
+  // RE's leader epoch.
+  uint64 leader_epoch = 6;
+}
+
+// Detaches a session.
+message DetachAgentRequest {
+  // The session.
+  SessionRef session = 1;
+  // Why.
+  DetachReason reason = 2;
+}
+
+// Whether the detach applied.
+message DetachAgentResponse {
+  // False when a newer attachment exists (nothing changed).
+  bool applied = 1;
+}
+
+// Asks for a state.
+message SetStateRequest {
+  // The session.
+  SessionRef session = 1;
+  // Repeat-safe by (tenant, command_id); the same id with another request: conflict.
+  string command_id = 2;
+  // The state asked for.
+  TargetState target = 3;
+  // For TARGET_STATE_NOT_READY: the reason code.
+  string reason_code = 4;
+}
+
+// The agent's state after the request.
+message SetStateResponse {
+  // The view; pending_target is set when the change waits for wrap-up to end.
+  AgentView agent = 1;
+}
+
+// Answers an offer.
+message AnswerOfferRequest {
+  // The session.
+  SessionRef session = 1;
+  // Repeat-safe by (tenant, command_id).
+  string command_id = 2;
+  // The offer.
+  string offer_id = 3;
+  // Accept or reject.
+  Decision decision = 4;
+  // For a reject: the reason code.
+  string reject_reason = 5;
+}
+
+// The answer RE recorded.
+message AnswerOfferResponse {
+  // The first answer to the offer.
+  Decision decision = 1;
+  // Set on an accept: RE sends Assigned to IE and Reserved on the Watch stream.
+  Reservation reservation = 2;
+}
+
+// Ends wrap-up.
+message EndWrapUpRequest {
+  // The session.
+  SessionRef session = 1;
+  // Repeat-safe by (tenant, command_id).
+  string command_id = 2;
+  // The reservation in wrap-up.
+  string reservation_id = 3;
+  // The disposition code (the id pattern; tenant configuration later).
+  string disposition_code = 4;
+}
+
+// The agent's state after wrap-up.
+message EndWrapUpResponse {
+  // The view.
+  AgentView agent = 1;
+}
+
+// One acknowledged Watch message.
+message Ack {
+  // The tenant.
+  string tenant_id = 1;
+  // The agent.
+  string agent_id = 2;
+  // The attachment the message was for.
+  uint64 attach_generation = 3;
+  // The message's delivery_seq.
+  uint64 delivery_seq = 4;
+}
+
+// A batch of acknowledgements.
+message AcknowledgeRequest {
+  // The gateway replica.
+  string replica_id = 1;
+  // The acknowledgements.
+  repeated Ack acks = 2;
+}
+
+// Acknowledged.
+message AcknowledgeResponse {}
+
+// A supervisor's forced state (0.11.0).
+message ForceStateRequest {
+  // The tenant, equal to the tenant-id metadata.
+  string tenant_id = 1;
+  // The agent.
+  string agent_id = 2;
+  // gw:<base64url>, like a desktop command's; repeat-safe for 10 minutes.
+  string command_id = 3;
+  // NOT_READY or LOGGED_OUT.
+  TargetState target = 4;
+  // NOT_READY's reason code (required for NOT_READY).
+  string reason_code = 5;
+  // The supervisor (an opaque id for the audit; never an email).
+  string supervisor_id = 6;
+}
+
+// The agent after a forced state.
+message ForceStateResponse {
+  // RE's view of the agent.
+  AgentView agent = 1;
+}
+
+// Opens a replica's stream.
+message WatchRequest {
+  // The gateway replica.
+  string replica_id = 1;
+  // Its bin: must be the caller's mTLS identity's.
+  string bin = 2;
+}
+
+// An offer was withdrawn.
+message OfferRevoked {
+  // The offer.
+  string offer_id = 1;
+  // Why.
+  RevokeReason reason = 2;
+}
+
+// The agent's state changed.
+message StateChanged {
+  // The new view.
+  AgentView agent = 1;
+}
+
+// Wrap-up started for a reservation.
+message WrapUpStarted {
+  // The reservation.
+  string reservation_id = 1;
+  // Its interaction.
+  string interaction_id = 2;
+  // When wrap-up ends by itself, epoch ms.
+  int64 ends_at_ms = 3;
+}
+
+// RE ended this attachment.
+message Detached {
+  // Why.
+  DetachedReason reason = 1;
+}
+
+// The agent's active set or its pending one changed (0.11.0). Never sent for a change of weights
+// only. A gateway without the case acks it and ignores it.
+message QueuesChanged {
+  // The active set now.
+  repeated QueueMembership queues = 1;
+  // The set waiting for the next offer; empty when none.
+  repeated QueueMembership pending_queues = 2;
+  // Why.
+  MembershipReason reason = 3;
+  // AgentView.queues_version after the change.
+  uint64 queues_version = 4;
+}
+
+// Sent every 5 s on each stream.
+message Heartbeat {
+  // RE's clock, epoch ms.
+  int64 at_ms = 1;
+}
+
+// One message on a Watch stream.
+message WatchResponse {
+  // RE's leader epoch; the gateway drops messages from an older one.
+  uint64 leader_epoch = 1;
+  // The agent's tenant; empty for Heartbeat.
+  string tenant_id = 2;
+  // The agent; empty for Heartbeat.
+  string agent_id = 3;
+  // The attachment the message is for; the gateway drops one for an older attachment.
+  uint64 attach_generation = 4;
+  // Per agent and attachment, from 1; 0 for Heartbeat (never replayed).
+  uint64 delivery_seq = 5;
+  // The message.
+  oneof event {
+    // A new offer.
+    Offer offer = 6;
+    // An offer withdrawn.
+    OfferRevoked offer_revoked = 7;
+    // The agent was reserved (after an accept, or for a campaign call).
+    Reservation reserved = 8;
+    // A state change.
+    StateChanged state_changed = 9;
+    // Wrap-up started.
+    WrapUpStarted wrap_up_started = 10;
+    // The attachment ended.
+    Detached detached = 11;
+    // The stream is alive.
+    Heartbeat heartbeat = 12;
+    // The agent's queues changed (0.11.0).
+    QueuesChanged queues_changed = 13;
+  }
+}
+
+// The value of the parity-error trailer: the name lowercased, without the prefix.
+enum ErrorCode {
+  // Unknown.
+  ERROR_CODE_UNSPECIFIED = 0;
+  // ABORTED: a newer attachment of the agent exists; the session is over.
+  ERROR_CODE_SESSION_SUPERSEDED = 1;
+  // FAILED_PRECONDITION: the offer expired, was revoked or answered otherwise.
+  ERROR_CODE_OFFER_GONE = 2;
+  // FAILED_PRECONDITION: the state change isn't allowed now (e.g. ready while logged out).
+  ERROR_CODE_INVALID_TRANSITION = 3;
+  // NOT_FOUND: no such agent for this tenant.
+  ERROR_CODE_AGENT_UNKNOWN = 4;
+  // UNAVAILABLE: not the leader; retry at parity-leader.
+  ERROR_CODE_NOT_LEADER = 5;
+  // INVALID_ARGUMENT: the tenant-id metadata and the request disagree.
+  ERROR_CODE_TENANT_MISMATCH = 6;
+  // INVALID_ARGUMENT: a field is missing or out of range.
+  ERROR_CODE_INVALID_REQUEST = 7;
+  // ALREADY_EXISTS: the command_id was used for a different request.
+  ERROR_CODE_CONFLICT = 8;
+  // ABORTED: a newer Watch stream of the same replica_id replaced this one.
+  ERROR_CODE_STREAM_SUPERSEDED = 9;
+  // NOT_FOUND: no such reservation for this agent.
+  ERROR_CODE_RESERVATION_UNKNOWN = 10;
+  // FAILED_PRECONDITION: the tenant isn't in this bin (0.11.0, CR-014).
+  ERROR_CODE_TENANT_NOT_IN_BIN = 11;
+}

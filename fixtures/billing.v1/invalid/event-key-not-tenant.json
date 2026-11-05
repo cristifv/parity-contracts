@@ -1,0 +1,28 @@
+{
+  "description": "An event keyed by another tenant",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "key_mismatch"
+  ],
+  "reader": "reject",
+  "record": {
+    "topic": "billing.events",
+    "key": "globex",
+    "headers": {
+      "tenant_id": "acme",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-e000-7aaa-8bbb-000000000b01",
+      "type": "invoice.paid",
+      "at_ms": 1792800000000,
+      "tenant_id": "acme",
+      "invoice_id": "in_1Abc",
+      "amount_minor": 60000,
+      "currency": "EUR"
+    }
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "service": "parity-interaction-engine",
+  "description": "Starter catalogue for parity-interaction-engine (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-interaction-engine.v1.json; the service owns it from then on.",
+  "events": {
+    "interaction.created": {
+      "description": "A call became an interaction: IE owns it from here (attrs.origin: pstn, agent, api, callback; parent_xsid when another call caused it).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "bin",
+        "owner_epoch"
+      ],
+      "attrs": [
+        "origin"
+      ]
+    },
+    "interaction.state_changed": {
+      "description": "The interaction's state machine moved (new, ivr, queued, offered, connected, consulting, wrap_up, ended).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "transition": true
+    },
+    "interaction.adopted": {
+      "description": "This replica took over a call whose owner died (owner_epoch is the new one).",
+      "levels": [
+        "warn"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "owner_epoch"
+      ]
+    },
+    "interaction.ended": {
+      "description": "The customer's call ended (attrs.end_reason: completed, abandoned, failed, busy, no_answer).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "attrs": [
+        "end_reason"
+      ]
+    },
+    "leg.added": {
+      "description": "A leg joined the call (attrs.role: customer, agent, consult, supervisor).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ],
+      "attrs": [
+        "role"
+      ]
+    },
+    "leg.removed": {
+      "description": "A leg left the call.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ],
+      "attrs": [
+        "reason"
+      ]
+    },
+    "ivr.input_collected": {
+      "description": "The IVR collected input: attrs.presses counts keys. Digits never appear.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "attrs": [
+        "presses",
+        "step"
+      ]
+    },
+    "routing.enqueued": {
+      "description": "Enqueue to the routing engine answered.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "queue_id",
+        "entry_id",
+        "op",
+        "outcome"
+      ]
+    },
+    "routing.assigned": {
+      "description": "The routing engine assigned an agent (Watch: Assigned).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "agent_id",
+        "reservation_id"
+      ]
+    },
+    "routing.rpc_failed": {
+      "description": "A routing RPC failed; outcome retry while attempts remain.",
+      "levels": [
+        "warn",
+        "error"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "op",
+        "attempt",
+        "outcome",
+        "error"
+      ]
+    },
+    "command.applied": {
+      "description": "An interaction.commands command was applied.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "command_id",
+        "op",
+        "outcome"
+      ]
+    },
+    "command.refused": {
+      "description": "An interaction.commands command was answered with an error code.",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "command_id",
+        "op",
+        "error"
+      ]
+    },
+    "consult.started": {
+      "description": "An agent started a consult: a child call with its own xsid, parent_xsid the customer's call.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "parent_xsid",
+        "agent_id"
+      ]
+    },
+    "consult.completed": {
+      "description": "The consult completed (warm transfer): the consulted agent's leg joins the parent call, which keeps its xsid.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "parent_xsid",
+        "leg_id"
+      ]
+    },
+    "cdr.written": {
+      "description": "The CDR row for the interaction was written (insert-only, idempotent).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "outcome"
+      ]
+    },
+    "owner.lease_lost": {
+      "description": "No etcd keepalive worked for a whole TTL: new calls are declined.",
+      "levels": [
+        "error"
+      ],
+      "requires": [
+        "bin"
+      ]
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "description": "An email address under an email-class name.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "unmasked_email"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-billing.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "warn",
+      "service": "parity-billing",
+      "version": "0.1.3",
+      "instance": "billing-0",
+      "seq": 101,
+      "event": "payment.failed",
+      "msg": "payment failed",
+      "tenant_id": "acme",
+      "error": {
+        "code": "card_declined"
+      },
+      "attrs": {
+        "billing_account_id": "ba-31",
+        "billing_email": "pat@example.com"
+      }
+    }
+  ]
+}

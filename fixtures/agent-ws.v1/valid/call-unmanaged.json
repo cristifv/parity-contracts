@@ -1,0 +1,34 @@
+{
+  "description": "IE lost control: the call stays up",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_desktop",
+  "frame": {
+    "v": 1,
+    "type": "call",
+    "seq": 4,
+    "call": {
+      "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+      "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+      "state": "connected",
+      "held": false,
+      "muted": false,
+      "consulting": false,
+      "recording": "on",
+      "managed": false,
+      "parties": [
+        {
+          "role": "customer",
+          "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+          "live": true
+        },
+        {
+          "role": "agent",
+          "agent_id": "agent-7f3a",
+          "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+          "live": true
+        }
+      ]
+    }
+  }
+}

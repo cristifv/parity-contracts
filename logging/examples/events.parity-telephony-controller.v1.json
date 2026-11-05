@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "service": "parity-telephony-controller",
+  "description": "Starter catalogue for parity-telephony-controller (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-telephony-controller.v1.json; the service owns it from then on.",
+  "events": {
+    "session.arrived": {
+      "description": "A call arrived from the edge; the xsid is read from X-Parity-Interaction-Id (X-Interaction-ID until opensips moves).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "node",
+        "leg_id"
+      ],
+      "attrs": [
+        "direction"
+      ]
+    },
+    "leg.ringing": {
+      "description": "A leg TC dialled is ringing.",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ]
+    },
+    "leg.answered": {
+      "description": "A leg answered (attrs.role).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ],
+      "attrs": [
+        "role"
+      ]
+    },
+    "leg.state_changed": {
+      "description": "A leg's state machine moved.",
+      "levels": [
+        "debug"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ],
+      "transition": true
+    },
+    "leg.ended": {
+      "description": "A leg ended (attrs.sip_status).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ],
+      "attrs": [
+        "sip_status"
+      ]
+    },
+    "command.executed": {
+      "description": "A telephony.v1 command finished.",
+      "levels": [
+        "info",
+        "debug"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "command_id",
+        "op",
+        "outcome",
+        "duration_ms"
+      ]
+    },
+    "command.failed": {
+      "description": "A telephony.v1 command failed.",
+      "levels": [
+        "warn",
+        "error"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "command_id",
+        "op",
+        "error"
+      ]
+    },
+    "dtmf.received": {
+      "description": "A key press on a leg. The digit never appears (a masker writes [redacted]).",
+      "levels": [
+        "debug"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ]
+    },
+    "recording.started": {
+      "description": "Recording started on a leg (attrs.recording_id).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "leg_id"
+      ],
+      "attrs": [
+        "recording_id"
+      ]
+    },
+    "node.lost": {
+      "description": "A media node stopped answering.",
+      "levels": [
+        "error"
+      ],
+      "requires": [
+        "node"
+      ]
+    }
+  }
+}

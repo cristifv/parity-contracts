@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "service": "parity-store",
+  "description": "Starter catalogue for parity-store (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-store.v1.json; the service owns it from then on.",
+  "events": {
+    "request.applied": {
+      "description": "A tenant.store request was applied.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id",
+        "request_id",
+        "op",
+        "outcome"
+      ]
+    },
+    "request.refused": {
+      "description": "A tenant.store request was refused (error.code).",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "requires": [
+        "request_id",
+        "op",
+        "error"
+      ]
+    },
+    "outbox.published": {
+      "description": "An outbox event was published.",
+      "levels": [
+        "debug"
+      ],
+      "requires": [
+        "event_id"
+      ]
+    },
+    "maps.loaded": {
+      "description": "The tenant maps were loaded (attrs.revision).",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "revision"
+      ]
+    }
+  }
+}

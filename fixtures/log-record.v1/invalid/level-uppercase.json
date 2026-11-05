@@ -1,0 +1,23 @@
+{
+  "description": "level INFO: today's Java and Rust formatters write uppercase levels.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-gateway.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "INFO",
+      "service": "parity-gateway",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 101,
+      "event": "service.ready",
+      "msg": "ready"
+    }
+  ]
+}

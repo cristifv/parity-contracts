@@ -1,0 +1,23 @@
+{
+  "description": "A service no catalogue given names.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "unknown_service"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-gateway.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-unknown",
+      "version": "0.3.2",
+      "instance": "gw-0",
+      "seq": 101,
+      "event": "service.ready",
+      "msg": "ready"
+    }
+  ]
+}

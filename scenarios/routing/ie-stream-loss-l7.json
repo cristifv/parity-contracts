@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "name": "ie-stream-loss-l7",
+  "description": "Variant (CR-055): IE's Watch stream is lost for 90 s, longer than an assignment's deadline + 2 s grace + the 10 s adoption budget (42 s): agents accept, Assigned can't reach IE, L7 expires the reservations, the entries go back at their ordering time; IE gets Assigned and Revoke in order on reconnect (owner_loss_s 300: IE is alive, only its stream is down, so the owner-loss cleanup of CR-083 must not fire; ie-restart-alone covers it)",
+  "seed": 13,
+  "duration_s": 1200,
+  "bin": "bin-a",
+  "tenants": [
+    {
+      "id": "acme",
+      "queues": [
+        {
+          "id": "sales",
+          "max_wait_s": 600,
+          "max_wait_action": {
+            "action": "disconnect"
+          },
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 120
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "fixed",
+            "s": 60
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 900
+          }
+        }
+      ],
+      "agents": [
+        {
+          "count": 3,
+          "ids": [
+            "agent-a1",
+            "agent-a2",
+            "agent-a3"
+          ],
+          "queues": [
+            "sales"
+          ],
+          "site": "site-a"
+        }
+      ],
+      "behaviour": {
+        "answer_delay": {
+          "kind": "fixed",
+          "s": 2
+        },
+        "wrap_up": {
+          "kind": "fixed",
+          "s": 10
+        }
+      },
+      "owner_loss_s": 300
+    }
+  ],
+  "events": [
+    {
+      "at_s": 300,
+      "kind": "ie_stream_lost",
+      "down_s": 90,
+      "note": "the IE replica's stream, not IE's RPCs"
+    }
+  ],
+  "expectations": {
+    "invariants": "all",
+    "latency_ms": {
+      "p99": 50,
+      "max": 250
+    },
+    "rss_mib_max": 512,
+    "must_occur": [
+      "assignment_expired"
+    ]
+  }
+}

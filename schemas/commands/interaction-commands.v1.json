@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/interaction-commands/v1.json",
+  "title": "interaction.commands, schema_version 1",
+  "description": "Commands to interaction-engine on interaction.commands, keyed by interaction_id, with the four headers (CONVENTIONS.md). Answers go to reply_to (interaction-replies.v1.json). Reserved command names are listed in x-reserved.",
+  "x-reserved": [
+    "monitor",
+    "set_monitor_mode",
+    "stop_monitor",
+    "kill"
+  ],
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "#/$defs/envelope"
+    }
+  ],
+  "oneOf": [
+    {
+      "$ref": "#/$defs/cmd_originate"
+    },
+    {
+      "$ref": "#/$defs/cmd_redirect"
+    },
+    {
+      "$ref": "#/$defs/cmd_hangup"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "uuid7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+      "description": "A DNS label. parity-store owns the format; CONVENTIONS.md holds the normative copy."
+    },
+    "opaque_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "description": "An opaque id (agent, supervisor). Never an email address."
+    },
+    "queue_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    },
+    "ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "e164": {
+      "type": "string",
+      "pattern": "^\\+[1-9][0-9]{6,14}$",
+      "x-pii": "phone"
+    },
+    "verb_document": {
+      "type": "object",
+      "required": [
+        "verbs"
+      ],
+      "additionalProperties": false,
+      "description": "A CPaaS verb document. Checked structurally here; the full check becomes a $ref to verbs.v1.json at step 10.",
+      "properties": {
+        "verbs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1
+          }
+        }
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "interaction_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/tenant_id"
+        },
+        "interaction_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid",
+          "deprecated": true,
+          "description": "voice-api's alias of interaction_id; must equal it. Removed in v2."
+        }
+      }
+    },
+    "cmd_originate": {
+      "title": "originate",
+      "properties": {
+        "cmd": {
+          "const": "originate"
+        },
+        "from": {
+          "$ref": "#/$defs/e164",
+          "x-pii": "phone"
+        },
+        "to": {
+          "$ref": "#/$defs/e164",
+          "x-pii": "phone"
+        },
+        "ring_timeout_s": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120
+        },
+        "verbs": {
+          "$ref": "#/$defs/verb_document"
+        }
+      },
+      "required": [
+        "cmd",
+        "from",
+        "to",
+        "ring_timeout_s"
+      ]
+    },
+    "cmd_redirect": {
+      "title": "redirect",
+      "properties": {
+        "cmd": {
+          "const": "redirect"
+        },
+        "verbs": {
+          "$ref": "#/$defs/verb_document"
+        }
+      },
+      "required": [
+        "cmd",
+        "verbs"
+      ]
+    },
+    "cmd_hangup": {
+      "title": "hangup",
+      "properties": {
+        "cmd": {
+          "const": "hangup"
+        }
+      },
+      "required": [
+        "cmd"
+      ]
+    }
+  }
+}

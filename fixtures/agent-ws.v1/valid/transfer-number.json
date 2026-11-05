@@ -1,0 +1,15 @@
+{
+  "description": "A blind transfer to a number (PII: phone, desktop to gateway only)",
+  "kind": "ws",
+  "writer_valid": true,
+  "direction": "to_gateway",
+  "frame": {
+    "v": 1,
+    "type": "transfer",
+    "id": "0192f6a1-c000-7aaa-8bbb-000000000001",
+    "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+    "target": {
+      "number": "+447700900123"
+    }
+  }
+}

@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "description": "The shared test tenants' entitlements (parity-billing PLAN §4.5): every reader's tests may use them. A release may add to them, never remove one. acme: a paid T1 tenant; globex: a mid tenant on contract terms (T3, operator-onboarded); initech-de and initech-uk: enterprise sub-tenants (T3). Every gated path stays closed (the gate: enforced.<path> is false everywhere until its negative test passes). initech is a parent: no record.",
+  "entitlements": [
+    {
+      "schema_version": 1,
+      "tenant_id": "acme",
+      "version": 1,
+      "state": "active",
+      "reason": "plan",
+      "plan_id": "team",
+      "tier": "T1",
+      "seats": 10,
+      "numbers": {
+        "max": 2,
+        "types": [
+          "geographic"
+        ]
+      },
+      "channels": [
+        "voice",
+        "webrtc",
+        "chat"
+      ],
+      "cpaas": false,
+      "outbound": {
+        "pstn": false,
+        "from_inbound": false,
+        "countries": [],
+        "international": false
+      },
+      "messaging": {
+        "sms": false,
+        "whatsapp": false
+      },
+      "email": {
+        "outbound": false,
+        "daily_max": 0
+      },
+      "caps": {
+        "daily_spend_minor": 2500,
+        "currency": "EUR",
+        "concurrent_outbound": 0,
+        "cps": 0,
+        "concurrent_inbound": 10,
+        "inbound_minutes_month": 10000,
+        "ai_minutes_month": 300,
+        "max_interaction_s": null
+      },
+      "retention_max_days": 90,
+      "trial_credit_pct": null,
+      "period_end_ms": 1795392000000,
+      "computed_at_ms": 1792800000000
+    },
+    {
+      "schema_version": 1,
+      "tenant_id": "globex",
+      "version": 1,
+      "state": "active",
+      "reason": "override:onboarding",
+      "plan_id": "contract",
+      "tier": "T3",
+      "seats": 40,
+      "numbers": {
+        "max": 10,
+        "types": [
+          "geographic"
+        ]
+      },
+      "channels": [
+        "voice",
+        "webrtc",
+        "chat"
+      ],
+      "cpaas": false,
+      "outbound": {
+        "pstn": false,
+        "from_inbound": false,
+        "countries": [],
+        "international": false
+      },
+      "messaging": {
+        "sms": false,
+        "whatsapp": false
+      },
+      "email": {
+        "outbound": false,
+        "daily_max": 0
+      },
+      "caps": {
+        "daily_spend_minor": 25000,
+        "currency": "EUR",
+        "concurrent_outbound": 0,
+        "cps": 0,
+        "concurrent_inbound": 40,
+        "inbound_minutes_month": 40000,
+        "ai_minutes_month": 2000,
+        "max_interaction_s": null
+      },
+      "retention_max_days": 90,
+      "trial_credit_pct": null,
+      "period_end_ms": null,
+      "computed_at_ms": 1792800000000
+    },
+    {
+      "schema_version": 1,
+      "tenant_id": "initech-de",
+      "version": 1,
+      "state": "active",
+      "reason": "override:onboarding",
+      "plan_id": "contract",
+      "tier": "T3",
+      "seats": 100,
+      "numbers": {
+        "max": 20,
+        "types": [
+          "geographic"
+        ]
+      },
+      "channels": [
+        "voice",
+        "webrtc",
+        "chat"
+      ],
+      "cpaas": false,
+      "outbound": {
+        "pstn": false,
+        "from_inbound": false,
+        "countries": [],
+        "international": false
+      },
+      "messaging": {
+        "sms": false,
+        "whatsapp": false
+      },
+      "email": {
+        "outbound": false,
+        "daily_max": 0
+      },
+      "caps": {
+        "daily_spend_minor": 50000,
+        "currency": "EUR",
+        "concurrent_outbound": 0,
+        "cps": 0,
+        "concurrent_inbound": 100,
+        "inbound_minutes_month": 100000,
+        "ai_minutes_month": 5000,
+        "max_interaction_s": null
+      },
+      "retention_max_days": 365,
+      "trial_credit_pct": null,
+      "period_end_ms": null,
+      "computed_at_ms": 1792800000000
+    },
+    {
+      "schema_version": 1,
+      "tenant_id": "initech-uk",
+      "version": 1,
+      "state": "active",
+      "reason": "override:onboarding",
+      "plan_id": "contract",
+      "tier": "T3",
+      "seats": 50,
+      "numbers": {
+        "max": 10,
+        "types": [
+          "geographic"
+        ]
+      },
+      "channels": [
+        "voice",
+        "webrtc",
+        "chat"
+      ],
+      "cpaas": false,
+      "outbound": {
+        "pstn": false,
+        "from_inbound": false,
+        "countries": [],
+        "international": false
+      },
+      "messaging": {
+        "sms": false,
+        "whatsapp": false
+      },
+      "email": {
+        "outbound": false,
+        "daily_max": 0
+      },
+      "caps": {
+        "daily_spend_minor": 25000,
+        "currency": "GBP",
+        "concurrent_outbound": 0,
+        "cps": 0,
+        "concurrent_inbound": 50,
+        "inbound_minutes_month": 50000,
+        "ai_minutes_month": 2500,
+        "max_interaction_s": null
+      },
+      "retention_max_days": 365,
+      "trial_credit_pct": null,
+      "period_end_ms": null,
+      "computed_at_ms": 1792800000000
+    }
+  ]
+}

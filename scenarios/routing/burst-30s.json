@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "name": "burst-30s",
+  "description": "A sharp burst: 50 times the rate for 30 s, no ramp; then normal traffic",
+  "seed": 1,
+  "duration_s": 1800,
+  "bin": "bin-a",
+  "tenants": [
+    {
+      "id": "acme",
+      "queues": [
+        {
+          "id": "sales",
+          "max_wait_s": 120,
+          "max_wait_action": {
+            "action": "disconnect"
+          },
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 60
+              },
+              {
+                "t_s": 1800,
+                "per_hour": 60
+              }
+            ],
+            "spikes": [
+              {
+                "start_s": 600,
+                "duration_s": 30,
+                "multiplier": 50,
+                "ramp_s": 0
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "lognormal",
+            "mean_s": 180,
+            "cv": 0.8
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 90
+          },
+          "max_entries": 60
+        }
+      ],
+      "agents": [
+        {
+          "count": 5,
+          "ids": [
+            "agent-a1",
+            "agent-a2",
+            "agent-a3"
+          ],
+          "id_prefix": "acme-s",
+          "queues": [
+            "sales"
+          ],
+          "site": "site-a"
+        }
+      ],
+      "behaviour": {
+        "answer_delay": {
+          "kind": "exponential",
+          "mean_s": 3
+        },
+        "p_reject": 0.05,
+        "p_ignore": 0.03,
+        "p_leg_failed": 0.02,
+        "p_no_answer": 0.02,
+        "wrap_up": {
+          "kind": "exponential",
+          "mean_s": 20
+        }
+      }
+    }
+  ],
+  "expectations": {
+    "invariants": "all",
+    "latency_ms": {
+      "p99": 50,
+      "max": 250
+    },
+    "rss_mib_max": 512
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "description": "IE draining or the owner moving: retry with the same id (voice-api must map it to 503)",
+  "kind": "kafka",
+  "writer_valid": true,
+  "violates": [],
+  "reader": "apply",
+  "record": {
+    "topic": "replies.parity-voice-api",
+    "key": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+    "headers": {
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "voice-api-7d9f:0192f6a1-a000-7b00-8c00-000000000001",
+      "ok": false,
+      "error": {
+        "code": "unavailable",
+        "message": "the call's owner is moving; retry"
+      }
+    }
+  }
+}

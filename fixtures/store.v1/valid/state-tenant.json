@@ -1,0 +1,35 @@
+{
+  "description": "A tenant with its placement",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.store.state",
+    "key": "tenant:acme",
+    "headers": {
+      "schema_version": "1",
+      "revision": "7",
+      "tenant_id": "acme"
+    },
+    "value": {
+      "schema_version": 1,
+      "kind": "tenant",
+      "tenant_id": "acme",
+      "name": "Acme Ltd",
+      "tier": "small",
+      "parent": null,
+      "version": 1,
+      "placement": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-a",
+        "media_track": "blue",
+        "version": 1,
+        "updated_at_ms": 1792800000000
+      },
+      "revision": 7
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "description": "Java (Spring Boot, logback): commands with thread and incarnation, a masked DTMF field, an error with a multi-line stack in one string.",
+  "kind": "log",
+  "writer_valid": true,
+  "violates": [],
+  "catalogues": [
+    "logging/examples/events.parity-telephony-controller.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-telephony-controller",
+      "version": "0.4.1",
+      "instance": "tc-media-1",
+      "incarnation": "tc-7f3a",
+      "seq": 101,
+      "event": "command.executed",
+      "msg": "command executed",
+      "component": "parity.telephonycontroller.grpc.TelephonyApi",
+      "thread": "grpc-default-executor-3",
+      "op": "parity.telephony.v1.TelephonyService/RingLeg",
+      "command_id": "ie-0:0192f3c1-6f00-7000-8000-00000000c001",
+      "outcome": "ok",
+      "duration_ms": 12,
+      "leg_id": "6f1c2a9e-0000-4000-8000-000000000002",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736"
+    },
+    {
+      "ts": "2026-11-01T10:00:00.900Z",
+      "level": "debug",
+      "service": "parity-telephony-controller",
+      "version": "0.4.1",
+      "instance": "tc-media-1",
+      "incarnation": "tc-7f3a",
+      "seq": 102,
+      "event": "dtmf.received",
+      "msg": "key press",
+      "component": "parity.telephonycontroller.node.Dtmf",
+      "thread": "esl-1",
+      "leg_id": "6f1c2a9e-0000-4000-8000-000000000001",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "attrs": {
+        "digits": "[redacted]"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:00.940Z",
+      "level": "error",
+      "service": "parity-telephony-controller",
+      "version": "0.4.1",
+      "instance": "tc-media-1",
+      "incarnation": "tc-7f3a",
+      "seq": 103,
+      "event": "command.failed",
+      "msg": "command failed",
+      "component": "parity.telephonycontroller.grpc.TelephonyApi",
+      "thread": "grpc-default-executor-1",
+      "op": "parity.telephony.v1.TelephonyService/AnswerLeg",
+      "command_id": "ie-0:0192f3c1-6f00-7000-8000-00000000c001",
+      "outcome": "refused",
+      "leg_id": "6f1c2a9e-0000-4000-8000-000000000002",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "error": {
+        "code": "invalid_state",
+        "kind": "parity.telephonycontroller.node.InvalidState",
+        "message": "leg is not ringing",
+        "stack": "parity.telephonycontroller.node.InvalidState: leg is not ringing\n  at parity.telephonycontroller.node.Legs.answer(Legs.java:211)\n  at parity.telephonycontroller.grpc.TelephonyApi.answerLeg(TelephonyApi.java:140)\ncaused by: java.io.IOException: esl connection reset\n  at parity.telephonycontroller.node.Esl.send(Esl.java:88)"
+      }
+    }
+  ]
+}

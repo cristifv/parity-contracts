@@ -1,0 +1,26 @@
+{
+  "description": "An answer without id: dropped",
+  "kind": "routing_ops",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reject",
+  "record": {
+    "topic": "replies.parity-cc-tools",
+    "key": "acme",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "acme",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b"
+    },
+    "value": {
+      "schema_version": 1,
+      "ok": true,
+      "result": {
+        "pong": true
+      }
+    }
+  }
+}

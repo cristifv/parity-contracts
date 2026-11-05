@@ -1,0 +1,23 @@
+{
+  "description": "admin.provisioning.requests answered elsewhere: never answered",
+  "kind": "billing",
+  "writer_valid": false,
+  "violates": [
+    "reply_to_not_allowed"
+  ],
+  "reader": "dlt",
+  "record": {
+    "topic": "admin.provisioning.requests",
+    "key": "0192f6a1-e000-7aaa-8bbb-00000000a001",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "get_provisioning",
+      "id": "parity-billing-1:prov:0192f6a1-e000-7aaa-8bbb-00000000a001:get_provisioning",
+      "reply_to": "replies.admin-console",
+      "signup_id": "0192f6a1-e000-7aaa-8bbb-00000000a001"
+    }
+  }
+}

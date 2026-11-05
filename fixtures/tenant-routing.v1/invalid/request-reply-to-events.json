@@ -1,0 +1,26 @@
+{
+  "description": "A reply_to that isn't replies.*: never answered",
+  "kind": "routing_ops",
+  "writer_valid": false,
+  "violates": [
+    "schema",
+    "bad_reply_to"
+  ],
+  "reader": "dlt",
+  "record": {
+    "topic": "tenant.routing.requests.eu1a",
+    "key": "acme",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "acme"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "get_route",
+      "id": "cct-1:get_route-0001",
+      "reply_to": "tenant.routing.events.eu1a",
+      "tenant_id": "acme"
+    }
+  }
+}

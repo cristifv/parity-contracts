@@ -1,0 +1,30 @@
+{
+  "description": "saga.finished",
+  "kind": "routing_ops",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "tenant.routing.events.eu1a",
+    "key": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "acme",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0193a1b2-c3d4-7e5f-ba6b-7c8d9e0f1a3a",
+      "type": "saga.finished",
+      "at_ms": 1793000000000,
+      "zone": "eu1a",
+      "tenant_id": "acme",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+      "op_id": "0193a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "seq": 5,
+      "kind": "unit_move",
+      "outcome": "compensated",
+      "detail": "parity-store refused the write: not_found"
+    }
+  }
+}

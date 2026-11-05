@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/log-catalogue/v1.json",
+  "title": "A service's log event catalogue (0.13.0)",
+  "description": "logging/events.<service>.v1.json in each service's repository (logging/events.common.v1.json here, service \"*\", for the events every service shares). Lists every event name the service writes, the levels it may have, whether it is about a call (call_scoped: xsid and tenant_id required) and the fields it must carry. contract-check --logs checks log lines against log-record.v1 plus the catalogues given. Adding an event or a level is a change to the service's own file; renaming or removing one breaks dashboards and alerts that use it (CONVENTIONS \"Logging (log-record.v1)\").",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "service",
+    "events"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "service": {
+      "description": "The service's name as its records write it, or \"*\" for the common catalogue.",
+      "type": "string",
+      "pattern": "^([a-z][a-z0-9-]{1,62}|\\*)$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "events": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/event"
+      }
+    }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "levels"
+      ],
+      "properties": {
+        "description": {
+          "description": "What happened, for the person or model reading the log: when it is written and what it means for the flow.",
+          "type": "string",
+          "minLength": 1
+        },
+        "levels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "trace",
+              "debug",
+              "info",
+              "warn",
+              "error",
+              "fatal"
+            ]
+          }
+        },
+        "call_scoped": {
+          "description": "About one call: xsid and tenant_id are required.",
+          "type": "boolean",
+          "default": false
+        },
+        "requires": {
+          "description": "Correlation fields of log-record.v1 the record must carry (beyond xsid and tenant_id for a call-scoped event).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "trace_id",
+              "span_id",
+              "tenant_id",
+              "parent_xsid",
+              "call_id",
+              "session_id",
+              "leg_id",
+              "agent_id",
+              "queue_id",
+              "entry_id",
+              "reservation_id",
+              "request_id",
+              "command_id",
+              "event_id",
+              "op_id",
+              "saga_id",
+              "parent_saga_id",
+              "bin",
+              "zone",
+              "cell",
+              "node",
+              "leader_epoch",
+              "owner_epoch",
+              "op",
+              "cause",
+              "outcome",
+              "duration_ms",
+              "attempt",
+              "error"
+            ]
+          }
+        },
+        "attrs": {
+          "description": "Keys the record's attrs must hold.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          }
+        },
+        "transition": {
+          "description": "A state machine transition: from_state and to_state are required.",
+          "type": "boolean",
+          "default": false
+        },
+        "decision": {
+          "description": "The event may carry a decision object (debug or trace, or sampled).",
+          "type": "boolean",
+          "default": false
+        },
+        "sample_rate": {
+          "description": "With decision: the fraction of info-level records that carry a sampled decision.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "dedup": {
+          "description": "Repeats of this event are rate limited: at most one record per key per window, the rest counted in repeat_count.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "window_ms"
+          ],
+          "properties": {
+            "window_ms": {
+              "type": "integer",
+              "minimum": 100
+            },
+            "key": {
+              "description": "Fields that make two records the same (besides event, error.code and error.kind).",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

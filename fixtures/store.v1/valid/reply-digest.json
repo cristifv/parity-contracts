@@ -1,0 +1,26 @@
+{
+  "description": "get_digest's answer",
+  "kind": "store",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.admin-console",
+    "key": "acme",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "admin-api-1:get_tenant-0001",
+      "ok": true,
+      "result": {
+        "revision": 42,
+        "tenants": 5,
+        "numbers": 14,
+        "sip_domains": 4,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  }
+}

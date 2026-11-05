@@ -1,0 +1,24 @@
+{
+  "description": "tenant.signed_up",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "billing.events",
+    "key": "acme",
+    "headers": {
+      "tenant_id": "acme",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "event_id": "0192f6a1-e000-7aaa-8bbb-000000000b01",
+      "type": "tenant.signed_up",
+      "at_ms": 1792800000000,
+      "tenant_id": "acme",
+      "plan_id": "team",
+      "kind": "paid"
+    }
+  }
+}

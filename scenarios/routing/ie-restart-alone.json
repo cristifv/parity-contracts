@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "name": "ie-restart-alone",
+  "description": "IE restarts alone (RE and the gateway stay up) in the middle of traffic: the process forgets every call it owned and comes back after 5 s as a new replica. Within owner_loss_s (60 s) the engine drops the old replica's entries, offers and reservations (agents freed, connected calls to wrap-up) and stops redelivering to it; new calls flow as before (parity-cc-routing CR-083)",
+  "seed": 15,
+  "duration_s": 900,
+  "bin": "bin-a",
+  "tenants": [
+    {
+      "id": "acme",
+      "queues": [
+        {
+          "id": "sales",
+          "max_wait_s": 600,
+          "max_wait_action": {
+            "action": "disconnect"
+          },
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 240
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "fixed",
+            "s": 120
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 600
+          }
+        }
+      ],
+      "agents": [
+        {
+          "count": 4,
+          "ids": [
+            "agent-a1",
+            "agent-a2",
+            "agent-a3"
+          ],
+          "id_prefix": "acme-s",
+          "queues": [
+            "sales"
+          ],
+          "site": "site-a"
+        }
+      ],
+      "behaviour": {
+        "answer_delay": {
+          "kind": "fixed",
+          "s": 2
+        },
+        "wrap_up": {
+          "kind": "fixed",
+          "s": 10
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "at_s": 300,
+      "kind": "ie_restart",
+      "down_s": 5,
+      "note": "RE and the gateway stay up; the restart rule covers RE, not this"
+    }
+  ],
+  "expectations": {
+    "invariants": "all",
+    "latency_ms": {
+      "p99": 50,
+      "max": 250
+    },
+    "rss_mib_max": 512,
+    "must_occur": [
+      "owner_lost"
+    ]
+  }
+}

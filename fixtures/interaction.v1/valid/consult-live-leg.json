@@ -1,0 +1,213 @@
+{
+  "description": "A consulted agent with a live leg may act; an uninvolved agent may not",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.interaction.v1",
+  "given": {
+    "calls": [
+      {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "agent_id": "agent-7f3a",
+        "customer_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+        "agent_leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+        "managed": true,
+        "owner_epoch": "1042",
+        "seq": "12"
+      }
+    ],
+    "blocked_numbers": [],
+    "owner_moving": false
+  },
+  "steps": [
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-91c2",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:EdpaWE7TY_6gi5jvoVllhMJlH6nuDvsi1Gdrzrjsqtw",
+        "mute": {}
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "status": "PERMISSION_DENIED",
+        "parity_error": "not_your_call"
+      },
+      "note": "not in the call yet"
+    },
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:TBzqpmldzNGSQvHEQ3KAFvaXiH88fvV8Q1KPFCKP9_8",
+        "consult": {
+          "target": {
+            "agent_id": "agent-91c2"
+          }
+        }
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.interaction.v1.ExecuteResponse",
+        "body": {
+          "outcome": "OUTCOME_DONE",
+          "call": {
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "state": "CALL_STATE_CONNECTED",
+            "held": true,
+            "muted": false,
+            "consulting": true,
+            "parties": [
+              {
+                "role": "PARTY_ROLE_CUSTOMER",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+                "live": true
+              },
+              {
+                "role": "PARTY_ROLE_AGENT",
+                "agent_id": "agent-7f3a",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+                "live": true
+              },
+              {
+                "role": "PARTY_ROLE_AGENT",
+                "agent_id": "agent-91c2",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000003",
+                "live": true
+              }
+            ],
+            "recording": "RECORDING_STATE_ON",
+            "managed": true,
+            "owner_epoch": "1042",
+            "seq": "16",
+            "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-91c2",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:tCsXzYgcYpAvhhUrLjs-XtZELIgRNsOxbd31iv5PkwU",
+        "mute": {}
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.interaction.v1.ExecuteResponse",
+        "body": {
+          "outcome": "OUTCOME_DONE",
+          "call": {
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "state": "CALL_STATE_CONNECTED",
+            "held": true,
+            "muted": true,
+            "consulting": true,
+            "parties": [
+              {
+                "role": "PARTY_ROLE_CUSTOMER",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+                "live": true
+              },
+              {
+                "role": "PARTY_ROLE_AGENT",
+                "agent_id": "agent-7f3a",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+                "live": true
+              },
+              {
+                "role": "PARTY_ROLE_AGENT",
+                "agent_id": "agent-91c2",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000003",
+                "live": true
+              }
+            ],
+            "recording": "RECORDING_STATE_ON",
+            "managed": true,
+            "owner_epoch": "1042",
+            "seq": "17",
+            "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.interaction.v1.InteractionControlService/Execute",
+      "message": "parity.interaction.v1.ExecuteRequest",
+      "body": {
+        "tenant_id": "acme",
+        "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+        "agent_id": "agent-7f3a",
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+        "command_id": "gw:XHyLYnHZ5h_2u-VDzuFYOl3IszQ6UL9NFHEQqel10sQ",
+        "merge": {}
+      },
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "tenant-id": "acme"
+      },
+      "expect": {
+        "message": "parity.interaction.v1.ExecuteResponse",
+        "body": {
+          "outcome": "OUTCOME_DONE",
+          "call": {
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "state": "CALL_STATE_CONNECTED",
+            "held": false,
+            "muted": false,
+            "consulting": false,
+            "parties": [
+              {
+                "role": "PARTY_ROLE_CUSTOMER",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000001",
+                "live": true
+              },
+              {
+                "role": "PARTY_ROLE_AGENT",
+                "agent_id": "agent-7f3a",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000002",
+                "live": true
+              },
+              {
+                "role": "PARTY_ROLE_AGENT",
+                "agent_id": "agent-91c2",
+                "leg_id": "0192f6a1-a000-7aaa-8bbb-000000000003",
+                "live": true
+              }
+            ],
+            "recording": "RECORDING_STATE_ON",
+            "managed": true,
+            "owner_epoch": "1042",
+            "seq": "18",
+            "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001"
+          }
+        }
+      }
+    }
+  ]
+}

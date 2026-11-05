@@ -1,0 +1,27 @@
+{
+  "description": "parent_xsid equal to xsid.",
+  "kind": "log",
+  "writer_valid": false,
+  "violates": [
+    "bad_xsid"
+  ],
+  "catalogues": [
+    "logging/examples/events.parity-interaction-engine.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "info",
+      "service": "parity-interaction-engine",
+      "version": "0.6.0+a1b2c3d",
+      "instance": "ie-b0-0",
+      "seq": 101,
+      "event": "consult.started",
+      "msg": "consult started",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "parent_xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "agent_id": "agent-7"
+    }
+  ]
+}

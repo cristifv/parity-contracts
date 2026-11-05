@@ -1,0 +1,31 @@
+{
+  "description": "Today's voice-api headers (C7): dead-lettered until voice-api switches",
+  "kind": "kafka",
+  "writer_valid": false,
+  "violates": [
+    "missing_header:interaction_id",
+    "missing_header:schema_version",
+    "missing_header:tenant_id",
+    "missing_header:traceparent"
+  ],
+  "reader": "dlt",
+  "record": {
+    "topic": "interaction.commands",
+    "key": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+    "headers": {
+      "X-Tenant-ID": "acme",
+      "X-Interaction-ID": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "originate",
+      "id": "voice-api-7d9f:0192f6a1-a000-7b00-8c00-000000000001",
+      "reply_to": "replies.parity-voice-api",
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+      "from": "+447700900100",
+      "to": "+447700900123",
+      "ring_timeout_s": 30
+    }
+  }
+}

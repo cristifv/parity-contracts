@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "service": "parity-cc-tools",
+  "description": "Starter catalogue for parity-cc-tools (parity-contracts 0.16.0). Copy it to the service's repository as logging/events.parity-cc-tools.v1.json; the service owns it from then on.",
+  "events": {
+    "http.request": {
+      "description": "One HTTP request served (attrs.status).",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "requires": [
+        "request_id",
+        "op",
+        "outcome",
+        "duration_ms"
+      ],
+      "attrs": [
+        "status"
+      ]
+    },
+    "auth.login_succeeded": {
+      "description": "An operator signed in to the ops realm (attrs.actor_sub).",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "actor_sub"
+      ]
+    },
+    "auth.login_refused": {
+      "description": "A sign-in or token was refused (attrs.reason).",
+      "levels": [
+        "warn"
+      ],
+      "attrs": [
+        "reason"
+      ],
+      "dedup": {
+        "window_ms": 10000,
+        "key": [
+          "attrs.reason"
+        ]
+      }
+    },
+    "auth.step_up_required": {
+      "description": "A high-risk action needs a fresh login.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "op_id"
+      ]
+    },
+    "action.requested": {
+      "description": "An operator confirmed an action; its audit row is written before it is sent.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "op_id"
+      ],
+      "attrs": [
+        "action",
+        "actor_sub"
+      ]
+    },
+    "action.answered": {
+      "description": "The backend answered an action (error.code when refused).",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "requires": [
+        "op_id",
+        "outcome"
+      ]
+    },
+    "action.not_confirmed": {
+      "description": "No answer yet: the page follows the saga's events.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "op_id"
+      ]
+    },
+    "action.outcome": {
+      "description": "The action's saga ended (attrs.saga_outcome).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "op_id",
+        "saga_id"
+      ],
+      "attrs": [
+        "saga_outcome"
+      ]
+    },
+    "audit.write_failed": {
+      "description": "An audit row could not be written: nothing was sent.",
+      "levels": [
+        "error"
+      ],
+      "requires": [
+        "op_id",
+        "error"
+      ]
+    },
+    "service_op.state_changed": {
+      "description": "A service-control saga moved.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "op_id",
+        "saga_id"
+      ],
+      "attrs": [
+        "service_name",
+        "driver"
+      ],
+      "transition": true
+    },
+    "service_op.finished": {
+      "description": "A service-control saga ended (attrs.saga_outcome).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "op_id",
+        "saga_id"
+      ],
+      "attrs": [
+        "service_name",
+        "saga_outcome"
+      ]
+    },
+    "health.probe_failed": {
+      "description": "A health probe failed (attrs.service_name, error.kind).",
+      "levels": [
+        "warn"
+      ],
+      "attrs": [
+        "service_name"
+      ],
+      "dedup": {
+        "window_ms": 60000,
+        "key": [
+          "attrs.service_name"
+        ]
+      }
+    },
+    "k8s.call_failed": {
+      "description": "A Kubernetes API call failed.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "error"
+      ],
+      "dedup": {
+        "window_ms": 60000,
+        "key": [
+          "op"
+        ]
+      }
+    }
+  }
+}

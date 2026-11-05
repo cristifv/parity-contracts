@@ -1,0 +1,1837 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/tenant-routing/events/v1.json",
+  "title": "parity-rs tenant routing events (0.16.0)",
+  "description": "tenant.routing.events.<zone>, written in the zone leader's Kafka transactions (read with read_committed). Keyed by tenant id (route.*, assignment.changed, drift.detected), saga id (saga.*) or unit:<name> (unit.changed); `x-key` names it. Saga events carry seq (1, 2, … per saga). Headers: schema_version, traceparent, tenant_id when the body has one, op_id when the body has one.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ev_route_changed"
+    },
+    {
+      "$ref": "#/$defs/ev_route_deleted"
+    },
+    {
+      "$ref": "#/$defs/ev_saga_accepted"
+    },
+    {
+      "$ref": "#/$defs/ev_saga_state_changed"
+    },
+    {
+      "$ref": "#/$defs/ev_saga_finished"
+    },
+    {
+      "$ref": "#/$defs/ev_saga_blocked"
+    },
+    {
+      "$ref": "#/$defs/ev_unit_changed"
+    },
+    {
+      "$ref": "#/$defs/ev_assignment_changed"
+    },
+    {
+      "$ref": "#/$defs/ev_drift_detected"
+    }
+  ],
+  "$defs": {
+    "ev_route_changed": {
+      "description": "A tenant's placement changed (parity-store answered the write). Key: tenant id.",
+      "x-key": "tenant",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "tenant_id",
+        "route",
+        "cause"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "route.changed"
+        },
+        "route": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tenant_id",
+            "placement",
+            "version"
+          ],
+          "properties": {
+            "tenant_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+              "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "tier": {
+              "enum": [
+                "small",
+                "mid",
+                "enterprise"
+              ]
+            },
+            "parent": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                  "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "placement": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "home_zone",
+                    "zone",
+                    "cell",
+                    "deployment_unit"
+                  ],
+                  "description": "parity-store's placement fields (CONVENTIONS \"Tenant maps\"). `cell` names the zone that serves the tenant (zone = cell); records written before 2026-11-03 hold the region in `zone`, `home_zone` and `failover_zone`. parity-rs writes zone = home_zone = cell.",
+                  "properties": {
+                    "home_zone": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "failover_zone": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "zone": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "cell": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "deployment_unit": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "media_track": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991,
+              "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "owner_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "assignment": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "unit"
+                  ],
+                  "properties": {
+                    "unit": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "media_track": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "epoch": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  }
+                }
+              ]
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "enum": [
+                        "live",
+                        "canary",
+                        "previous",
+                        "empty",
+                        "draining",
+                        "failed"
+                      ]
+                    },
+                    "release": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+                    },
+                    "ready": {
+                      "type": "boolean"
+                    },
+                    "health": {
+                      "enum": [
+                        "ok",
+                        "degraded",
+                        "failing",
+                        "unknown"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "pin": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "until_ms"
+                  ],
+                  "properties": {
+                    "until_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 500,
+                      "description": "Why: shown in the audit and on the saga. No personal data."
+                    }
+                  }
+                }
+              ]
+            },
+            "active_saga": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "saga_id",
+                    "kind",
+                    "state"
+                  ],
+                  "properties": {
+                    "saga_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "description": "UUIDv7, lowercase."
+                    },
+                    "kind": {
+                      "enum": [
+                        "placement",
+                        "placement_update",
+                        "unit_move",
+                        "zone_move",
+                        "rollout",
+                        "drain"
+                      ]
+                    },
+                    "state": {
+                      "enum": [
+                        "accepted",
+                        "assigning",
+                        "recording",
+                        "preparing",
+                        "fencing",
+                        "switching",
+                        "handing_over",
+                        "compensating",
+                        "copying",
+                        "ready_to_cut",
+                        "cutting_over",
+                        "draining",
+                        "finishing",
+                        "canary_ready",
+                        "ring_moving",
+                        "ring_baking",
+                        "promoting",
+                        "watching",
+                        "paused",
+                        "rolling_back",
+                        "drained",
+                        "blocked",
+                        "done",
+                        "aborted",
+                        "cancelled"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "previous": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "home_zone",
+            "zone",
+            "cell",
+            "deployment_unit"
+          ],
+          "description": "parity-store's placement fields (CONVENTIONS \"Tenant maps\"). `cell` names the zone that serves the tenant (zone = cell); records written before 2026-11-03 hold the region in `zone`, `home_zone` and `failover_zone`. parity-rs writes zone = home_zone = cell.",
+          "properties": {
+            "home_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "failover_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "cell": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "deployment_unit": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "media_track": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            }
+          }
+        },
+        "cause": {
+          "enum": [
+            "place",
+            "move",
+            "zone_move",
+            "failover_change",
+            "import"
+          ]
+        }
+      }
+    },
+    "ev_route_deleted": {
+      "description": "The tenant (and so its placement) was deleted in parity-store. Key: tenant id.",
+      "x-key": "tenant",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "tenant_id",
+        "route"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "route.deleted"
+        },
+        "route": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tenant_id",
+            "placement",
+            "version"
+          ],
+          "properties": {
+            "tenant_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+              "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "tier": {
+              "enum": [
+                "small",
+                "mid",
+                "enterprise"
+              ]
+            },
+            "parent": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                  "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "placement": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "home_zone",
+                    "zone",
+                    "cell",
+                    "deployment_unit"
+                  ],
+                  "description": "parity-store's placement fields (CONVENTIONS \"Tenant maps\"). `cell` names the zone that serves the tenant (zone = cell); records written before 2026-11-03 hold the region in `zone`, `home_zone` and `failover_zone`. parity-rs writes zone = home_zone = cell.",
+                  "properties": {
+                    "home_zone": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "failover_zone": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "zone": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "cell": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "deployment_unit": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "media_track": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991,
+              "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "owner_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "assignment": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "unit"
+                  ],
+                  "properties": {
+                    "unit": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "media_track": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                      "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                    },
+                    "epoch": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  }
+                }
+              ]
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "role": {
+                      "enum": [
+                        "live",
+                        "canary",
+                        "previous",
+                        "empty",
+                        "draining",
+                        "failed"
+                      ]
+                    },
+                    "release": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+                    },
+                    "ready": {
+                      "type": "boolean"
+                    },
+                    "health": {
+                      "enum": [
+                        "ok",
+                        "degraded",
+                        "failing",
+                        "unknown"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "pin": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "until_ms"
+                  ],
+                  "properties": {
+                    "until_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 500,
+                      "description": "Why: shown in the audit and on the saga. No personal data."
+                    }
+                  }
+                }
+              ]
+            },
+            "active_saga": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "saga_id",
+                    "kind",
+                    "state"
+                  ],
+                  "properties": {
+                    "saga_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "description": "UUIDv7, lowercase."
+                    },
+                    "kind": {
+                      "enum": [
+                        "placement",
+                        "placement_update",
+                        "unit_move",
+                        "zone_move",
+                        "rollout",
+                        "drain"
+                      ]
+                    },
+                    "state": {
+                      "enum": [
+                        "accepted",
+                        "assigning",
+                        "recording",
+                        "preparing",
+                        "fencing",
+                        "switching",
+                        "handing_over",
+                        "compensating",
+                        "copying",
+                        "ready_to_cut",
+                        "cutting_over",
+                        "draining",
+                        "finishing",
+                        "canary_ready",
+                        "ring_moving",
+                        "ring_baking",
+                        "promoting",
+                        "watching",
+                        "paused",
+                        "rolling_back",
+                        "drained",
+                        "blocked",
+                        "done",
+                        "aborted",
+                        "cancelled"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "ev_saga_accepted": {
+      "description": "A saga was accepted. Key: saga id.",
+      "x-key": "saga",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "saga_id",
+        "seq",
+        "kind",
+        "actor"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "saga.accepted"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "kind": {
+          "enum": [
+            "placement",
+            "placement_update",
+            "unit_move",
+            "zone_move",
+            "rollout",
+            "drain"
+          ]
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "plan": {
+          "type": "object"
+        }
+      }
+    },
+    "ev_saga_state_changed": {
+      "description": "A saga moved to another state. Key: saga id.",
+      "x-key": "saga",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "saga_id",
+        "seq",
+        "kind",
+        "from_state",
+        "to_state"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "saga.state_changed"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "kind": {
+          "enum": [
+            "placement",
+            "placement_update",
+            "unit_move",
+            "zone_move",
+            "rollout",
+            "drain"
+          ]
+        },
+        "from_state": {
+          "enum": [
+            "accepted",
+            "assigning",
+            "recording",
+            "preparing",
+            "fencing",
+            "switching",
+            "handing_over",
+            "compensating",
+            "copying",
+            "ready_to_cut",
+            "cutting_over",
+            "draining",
+            "finishing",
+            "canary_ready",
+            "ring_moving",
+            "ring_baking",
+            "promoting",
+            "watching",
+            "paused",
+            "rolling_back",
+            "drained",
+            "blocked",
+            "done",
+            "aborted",
+            "cancelled"
+          ]
+        },
+        "to_state": {
+          "enum": [
+            "accepted",
+            "assigning",
+            "recording",
+            "preparing",
+            "fencing",
+            "switching",
+            "handing_over",
+            "compensating",
+            "copying",
+            "ready_to_cut",
+            "cutting_over",
+            "draining",
+            "finishing",
+            "canary_ready",
+            "ring_moving",
+            "ring_baking",
+            "promoting",
+            "watching",
+            "paused",
+            "rolling_back",
+            "drained",
+            "blocked",
+            "done",
+            "aborted",
+            "cancelled"
+          ]
+        },
+        "step": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "done",
+            "total"
+          ],
+          "properties": {
+            "done": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "failed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "detail": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "ev_saga_finished": {
+      "description": "A saga ended. Key: saga id.",
+      "x-key": "saga",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "saga_id",
+        "seq",
+        "kind",
+        "outcome"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "saga.finished"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "kind": {
+          "enum": [
+            "placement",
+            "placement_update",
+            "unit_move",
+            "zone_move",
+            "rollout",
+            "drain"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "done",
+            "aborted",
+            "cancelled",
+            "compensated",
+            "rolled_back",
+            "stopped"
+          ]
+        },
+        "after": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "home_zone",
+            "zone",
+            "cell",
+            "deployment_unit"
+          ],
+          "description": "parity-store's placement fields (CONVENTIONS \"Tenant maps\"). `cell` names the zone that serves the tenant (zone = cell); records written before 2026-11-03 hold the region in `zone`, `home_zone` and `failover_zone`. parity-rs writes zone = home_zone = cell.",
+          "properties": {
+            "home_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "failover_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "cell": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "deployment_unit": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "media_track": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            }
+          }
+        },
+        "detail": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "ev_saga_blocked": {
+      "description": "A saga needs an operator (resolve_saga). Key: saga id.",
+      "x-key": "saga",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "saga_id",
+        "seq",
+        "kind",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "saga.blocked"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "kind": {
+          "enum": [
+            "placement",
+            "placement_update",
+            "unit_move",
+            "zone_move",
+            "rollout",
+            "drain"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "ev_unit_changed": {
+      "description": "A unit's role, release, readiness or health changed. Key: unit (unit:<name>).",
+      "x-key": "unit",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "unit"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "unit.changed"
+        },
+        "unit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unit",
+            "role"
+          ],
+          "properties": {
+            "unit": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "role": {
+              "enum": [
+                "live",
+                "canary",
+                "previous",
+                "empty",
+                "draining",
+                "failed"
+              ]
+            },
+            "release": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+            },
+            "ready": {
+              "type": "boolean"
+            },
+            "health": {
+              "enum": [
+                "ok",
+                "degraded",
+                "failing",
+                "unknown"
+              ]
+            },
+            "replicas": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tenant_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        },
+        "previous_role": {
+          "enum": [
+            "live",
+            "canary",
+            "previous",
+            "empty",
+            "draining",
+            "failed"
+          ]
+        }
+      }
+    },
+    "ev_assignment_changed": {
+      "description": "A tenant's assignment in the zone's etcd changed; epoch is its revision. Key: tenant id.",
+      "x-key": "tenant",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "tenant_id",
+        "unit",
+        "epoch"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "assignment.changed"
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "media_track": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "previous_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        }
+      }
+    },
+    "ev_drift_detected": {
+      "description": "The assignment names another unit than parity-store's placement, with no saga to explain it. Key: tenant id.",
+      "x-key": "tenant",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "at_ms",
+        "zone",
+        "tenant_id",
+        "store",
+        "assignment"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "parent_saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "type": {
+          "const": "drift.detected"
+        },
+        "store": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "assignment": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tenant_id",
+        "placement",
+        "version"
+      ],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "tier": {
+          "enum": [
+            "small",
+            "mid",
+            "enterprise"
+          ]
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+              "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "placement": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "home_zone",
+                "zone",
+                "cell",
+                "deployment_unit"
+              ],
+              "description": "parity-store's placement fields (CONVENTIONS \"Tenant maps\"). `cell` names the zone that serves the tenant (zone = cell); records written before 2026-11-03 hold the region in `zone`, `home_zone` and `failover_zone`. parity-rs writes zone = home_zone = cell.",
+              "properties": {
+                "home_zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "failover_zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "cell": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "deployment_unit": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "media_track": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "owner_zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "assignment": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "unit"
+              ],
+              "properties": {
+                "unit": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "media_track": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "epoch": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              }
+            }
+          ]
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role"
+              ],
+              "properties": {
+                "role": {
+                  "enum": [
+                    "live",
+                    "canary",
+                    "previous",
+                    "empty",
+                    "draining",
+                    "failed"
+                  ]
+                },
+                "release": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+                },
+                "ready": {
+                  "type": "boolean"
+                },
+                "health": {
+                  "enum": [
+                    "ok",
+                    "degraded",
+                    "failing",
+                    "unknown"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "pin": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "until_ms"
+              ],
+              "properties": {
+                "until_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 500,
+                  "description": "Why: shown in the audit and on the saga. No personal data."
+                }
+              }
+            }
+          ]
+        },
+        "active_saga": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "saga_id",
+                "kind",
+                "state"
+              ],
+              "properties": {
+                "saga_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  "description": "UUIDv7, lowercase."
+                },
+                "kind": {
+                  "enum": [
+                    "placement",
+                    "placement_update",
+                    "unit_move",
+                    "zone_move",
+                    "rollout",
+                    "drain"
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "accepted",
+                    "assigning",
+                    "recording",
+                    "preparing",
+                    "fencing",
+                    "switching",
+                    "handing_over",
+                    "compensating",
+                    "copying",
+                    "ready_to_cut",
+                    "cutting_over",
+                    "draining",
+                    "finishing",
+                    "canary_ready",
+                    "ring_moving",
+                    "ring_baking",
+                    "promoting",
+                    "watching",
+                    "paused",
+                    "rolling_back",
+                    "drained",
+                    "blocked",
+                    "done",
+                    "aborted",
+                    "cancelled"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit",
+        "role"
+      ],
+      "properties": {
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "role": {
+          "enum": [
+            "live",
+            "canary",
+            "previous",
+            "empty",
+            "draining",
+            "failed"
+          ]
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "health": {
+          "enum": [
+            "ok",
+            "degraded",
+            "failing",
+            "unknown"
+          ]
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tenant_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    }
+  }
+}

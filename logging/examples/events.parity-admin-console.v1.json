@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "service": "parity-admin-console",
+  "description": "Starter catalogue for parity-admin-console (parity-contracts 0.13.0). Copy it to the service's repository as logging/events.parity-admin-console.v1.json; the service owns it from then on.",
+  "events": {
+    "http.request": {
+      "description": "One HTTP request served (attrs.status).",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "requires": [
+        "request_id",
+        "op",
+        "outcome",
+        "duration_ms"
+      ],
+      "attrs": [
+        "status"
+      ]
+    },
+    "user.login": {
+      "description": "A tenant user signed in (attrs.user_id).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id",
+        "session_id"
+      ],
+      "attrs": [
+        "user_id"
+      ]
+    },
+    "provisioning.requested": {
+      "description": "A provisioning request was sent.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id",
+        "request_id"
+      ]
+    },
+    "call.details_viewed": {
+      "description": "A tenant user opened a call's details (support quotes the xsid).",
+      "levels": [
+        "info"
+      ],
+      "call_scoped": true,
+      "requires": [
+        "session_id"
+      ],
+      "attrs": [
+        "user_id"
+      ]
+    }
+  }
+}

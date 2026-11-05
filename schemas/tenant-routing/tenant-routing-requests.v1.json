@@ -1,0 +1,2370 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/tenant-routing/requests/v1.json",
+  "title": "parity-rs tenant routing requests (0.16.0)",
+  "description": "Requests to a zone's parity-rs on tenant.routing.requests.<zone> (reads only), tenant.routing.ops.requests.<zone> (parity-cc-tools only: every operation) and tenant.routing.onboarding.requests.<zone> (admin-console only: place_tenant with a hint). `x-topics` lists the topics a command is allowed on; on any other it is answered forbidden and changes nothing (authorization is the topic). Every operation carries op_id (one per confirmed operator action), actor and reason; a saga-starting one its saga_id (the idempotency key). CONVENTIONS \"Tenant routing API\".",
+  "x-reserved": [
+    "peer_place",
+    "peer_prepare_inbound",
+    "peer_activate_inbound",
+    "peer_release_inbound",
+    "peer_report"
+  ],
+  "oneOf": [
+    {
+      "$ref": "#/$defs/cmd_ping"
+    },
+    {
+      "$ref": "#/$defs/cmd_get_route"
+    },
+    {
+      "$ref": "#/$defs/cmd_list_routes"
+    },
+    {
+      "$ref": "#/$defs/cmd_get_topology"
+    },
+    {
+      "$ref": "#/$defs/cmd_get_saga"
+    },
+    {
+      "$ref": "#/$defs/cmd_list_sagas"
+    },
+    {
+      "$ref": "#/$defs/cmd_place_tenant"
+    },
+    {
+      "$ref": "#/$defs/cmd_validate_move"
+    },
+    {
+      "$ref": "#/$defs/cmd_move_tenant"
+    },
+    {
+      "$ref": "#/$defs/cmd_move_tenant_zone"
+    },
+    {
+      "$ref": "#/$defs/cmd_set_failover_zone"
+    },
+    {
+      "$ref": "#/$defs/cmd_confirm_cutover"
+    },
+    {
+      "$ref": "#/$defs/cmd_cancel_saga"
+    },
+    {
+      "$ref": "#/$defs/cmd_stop_rollout"
+    },
+    {
+      "$ref": "#/$defs/cmd_resume_rollout"
+    },
+    {
+      "$ref": "#/$defs/cmd_rollback_rollout"
+    },
+    {
+      "$ref": "#/$defs/cmd_resolve_saga"
+    },
+    {
+      "$ref": "#/$defs/cmd_advance_rollout"
+    },
+    {
+      "$ref": "#/$defs/cmd_pin_tenant"
+    },
+    {
+      "$ref": "#/$defs/cmd_unpin_tenant"
+    },
+    {
+      "$ref": "#/$defs/cmd_start_rollout"
+    },
+    {
+      "$ref": "#/$defs/cmd_drain_unit"
+    },
+    {
+      "$ref": "#/$defs/cmd_release_unit"
+    }
+  ],
+  "$defs": {
+    "cmd_ping": {
+      "description": "Liveness of the zone's leader.",
+      "x-topics": [
+        "requests",
+        "ops",
+        "onboarding"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "ping"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        }
+      }
+    },
+    "cmd_get_route": {
+      "description": "One tenant's route.",
+      "x-topics": [
+        "requests",
+        "ops",
+        "onboarding"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "get_route"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        }
+      }
+    },
+    "cmd_list_routes": {
+      "description": "A page of routes, by tenant id.",
+      "x-topics": [
+        "requests",
+        "ops",
+        "onboarding"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "list_routes"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "after": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "deployment_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "tier": {
+          "enum": [
+            "small",
+            "mid",
+            "enterprise"
+          ]
+        },
+        "owned_only": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cmd_get_topology": {
+      "description": "Regions, zones and units with their role, release, readiness and health.",
+      "x-topics": [
+        "requests",
+        "ops",
+        "onboarding"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "get_topology"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        }
+      }
+    },
+    "cmd_get_saga": {
+      "description": "One saga.",
+      "x-topics": [
+        "requests",
+        "ops",
+        "onboarding"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "get_saga"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        }
+      }
+    },
+    "cmd_list_sagas": {
+      "description": "A page of sagas.",
+      "x-topics": [
+        "requests",
+        "ops",
+        "onboarding"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "list_sagas"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "state": {
+          "enum": [
+            "active",
+            "finished"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "placement",
+            "placement_update",
+            "unit_move",
+            "zone_move",
+            "rollout",
+            "drain"
+          ]
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "after": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      }
+    },
+    "cmd_place_tenant": {
+      "description": "Places a new tenant: parity-rs decides from `hint` (onboarding topic) or takes an operator's `target` (ops topic). Exactly one of them. An already placed tenant answers its placement, `changed: false`.",
+      "x-topics": [
+        "onboarding",
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "op_id",
+        "actor",
+        "reason",
+        "saga_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "place_tenant"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "hint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "residency"
+          ],
+          "properties": {
+            "residency": {
+              "type": "string",
+              "pattern": "^[a-z]{2,8}$"
+            },
+            "preferred_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "country": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            "seats": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            }
+          }
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "zone"
+          ],
+          "properties": {
+            "zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "deployment_unit": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "media_track": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            "failover_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            }
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "hint"
+          ]
+        },
+        {
+          "required": [
+            "target"
+          ]
+        }
+      ]
+    },
+    "cmd_validate_move": {
+      "description": "The dry run of move_tenant (to_unit) or move_tenant_zone (to_zone): a plan, changes nothing.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "op_id",
+        "actor",
+        "reason",
+        "expected_version"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "validate_move"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "to_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "to_zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "media_track": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cmd_move_tenant": {
+      "description": "Moves a tenant to another deployment unit of its zone (the unit-move saga).",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "to_unit",
+        "op_id",
+        "actor",
+        "reason",
+        "saga_id",
+        "expected_version"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "move_tenant"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "to_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "media_track": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cmd_move_tenant_zone": {
+      "description": "Moves a tenant to another zone: the home-zone switch (the zone-move saga). v1 answers conflict zone_copy_unavailable.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "to_zone",
+        "op_id",
+        "actor",
+        "reason",
+        "saga_id",
+        "expected_version"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "move_tenant_zone"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "to_zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "to_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "cutover": {
+          "enum": [
+            "on_confirm",
+            "auto"
+          ]
+        },
+        "residency_approval_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        }
+      }
+    },
+    "cmd_set_failover_zone": {
+      "description": "Sets or clears the failover zone.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "failover_zone",
+        "op_id",
+        "actor",
+        "reason",
+        "saga_id",
+        "expected_version"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "set_failover_zone"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "failover_zone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "cmd_confirm_cutover": {
+      "description": "Lets a zone move waiting in ready_to_cut cut over.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "confirm_cutover"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        }
+      }
+    },
+    "cmd_cancel_saga": {
+      "description": "Cancels a saga: its compensation for the state it is in.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "cancel_saga"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        }
+      }
+    },
+    "cmd_stop_rollout": {
+      "description": "Pauses a rollout: no new moves; moves in flight finish.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "stop_rollout"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        }
+      }
+    },
+    "cmd_resume_rollout": {
+      "description": "Resumes a paused rollout.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "resume_rollout"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        }
+      }
+    },
+    "cmd_rollback_rollout": {
+      "description": "Moves every tenant of the canary unit back to the live unit.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "rollback_rollout"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        }
+      }
+    },
+    "cmd_resolve_saga": {
+      "description": "Resolves a blocked saga.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id",
+        "action",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "resolve_saga"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "action": {
+          "enum": [
+            "retry_record",
+            "accept_store"
+          ]
+        }
+      }
+    },
+    "cmd_advance_rollout": {
+      "description": "Starts the next ring, or promotes the canary after the last one.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "saga_id",
+        "expected_ring",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "advance_rollout"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "expected_ring": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64,
+          "description": "The ring baking now (1-based); refused ring_moved once it has moved on."
+        }
+      }
+    },
+    "cmd_pin_tenant": {
+      "description": "Pins a tenant to its unit until until_ms: moves and rollouts skip it.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "until_ms",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "pin_tenant"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "until_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "cmd_unpin_tenant": {
+      "description": "Removes a pin.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "tenant_id",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "unpin_tenant"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        }
+      }
+    },
+    "cmd_start_rollout": {
+      "description": "Starts a rollout of the release an empty unit runs; rings advance by hand in v1.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "zone",
+        "release",
+        "unit",
+        "plan",
+        "advance",
+        "op_id",
+        "actor",
+        "reason",
+        "saga_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "start_rollout"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "advance": {
+          "const": "manual"
+        },
+        "plan": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rings"
+          ],
+          "properties": {
+            "rings": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "select"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+                  },
+                  "select": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "test",
+                          "internal",
+                          "early"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "percent"
+                        ],
+                        "properties": {
+                          "percent": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "max_parallel": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        }
+      }
+    },
+    "cmd_drain_unit": {
+      "description": "Moves every tenant off a unit; the unit becomes empty.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "zone",
+        "unit",
+        "op_id",
+        "actor",
+        "reason",
+        "saga_id"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "drain_unit"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "to_unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "allow_release_change": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cmd_release_unit": {
+      "description": "A failed unit with no tenants becomes empty.",
+      "x-topics": [
+        "ops"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cmd",
+        "id",
+        "reply_to",
+        "zone",
+        "unit",
+        "op_id",
+        "actor",
+        "reason"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "cmd": {
+          "const": "release_unit"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "reply_to": {
+          "type": "string",
+          "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$",
+          "maxLength": 209
+        },
+        "op_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "actor": {
+          "description": "Who asked: a person (vouched for by the calling service) or a system. Informational: authorization is the topic.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sub",
+                "username"
+              ],
+              "properties": {
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "username": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._@-]{1,64}$"
+                },
+                "roles": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "system"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,63}$"
+                }
+              }
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Why: shown in the audit and on the saga. No personal data."
+        },
+        "ticket": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,99}$"
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        }
+      }
+    }
+  }
+}

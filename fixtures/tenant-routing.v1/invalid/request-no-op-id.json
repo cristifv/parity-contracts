@@ -1,0 +1,35 @@
+{
+  "description": "An operation without op_id: bad_request",
+  "kind": "routing_ops",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "tenant.routing.ops.requests.eu1a",
+    "key": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "drain_unit",
+      "id": "cct-1:drain_unit-0001",
+      "reply_to": "replies.parity-cc-tools",
+      "zone": "eu1a",
+      "unit": "bin-b",
+      "to_unit": "bin-a",
+      "actor": {
+        "sub": "5f0c2a9e-1b2c-4d3e-8f40-123456789abc",
+        "username": "jdoe",
+        "roles": [
+          "ops"
+        ]
+      },
+      "reason": "Move acme to the previous release for a support case",
+      "saga_id": "0193a1b2-c3d4-7e5f-9a6b-7c8d9e0f1a2c"
+    }
+  }
+}

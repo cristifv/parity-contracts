@@ -1,0 +1,773 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/billing-replies/v1.json",
+  "title": "parity-billing answers, schema_version 1",
+  "description": "On the request's reply_to (replies.parity-frontend for billing.web.requests, replies.admin-console for the console's topics), keyed like the request, headers schema_version and traceparent. message is for people: no personal data, never another tenant's. rule names the broken rule.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "ok"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/result_ping"
+        },
+        {
+          "$ref": "#/$defs/result_catalog"
+        },
+        {
+          "$ref": "#/$defs/result_slug"
+        },
+        {
+          "$ref": "#/$defs/result_signup"
+        },
+        {
+          "$ref": "#/$defs/result_checkout"
+        },
+        {
+          "$ref": "#/$defs/result_entitlements"
+        }
+      ]
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "bad_request",
+            "forbidden",
+            "not_found",
+            "conflict",
+            "unavailable",
+            "internal"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "rule": {
+          "enum": [
+            "slug_taken",
+            "reserved_word",
+            "wrong_state",
+            "plan_unknown",
+            "plan_unavailable",
+            "trial_seats",
+            "trial_unavailable",
+            "expired",
+            "session_mismatch",
+            "reservation_unavailable",
+            "stripe_unavailable"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "if": {
+    "properties": {
+      "ok": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "result"
+    ],
+    "not": {
+      "required": [
+        "error"
+      ]
+    }
+  },
+  "else": {
+    "required": [
+      "error"
+    ],
+    "not": {
+      "required": [
+        "result"
+      ]
+    }
+  },
+  "unevaluatedProperties": false,
+  "$defs": {
+    "entitlement": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "tenant_id",
+        "version",
+        "state",
+        "reason",
+        "plan_id",
+        "tier",
+        "seats",
+        "numbers",
+        "channels",
+        "cpaas",
+        "outbound",
+        "messaging",
+        "email",
+        "caps",
+        "retention_max_days",
+        "trial_credit_pct",
+        "period_end_ms",
+        "computed_at_ms"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "enum": [
+            "trial",
+            "trial_ended",
+            "active",
+            "grace",
+            "restricted",
+            "suspended",
+            "cancelled"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "^[a-z0-9_.:-]{1,80}$",
+          "description": "Why this version: plan, trial_credit, dunning, gate, override:<action id>"
+        },
+        "plan_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tier": {
+          "enum": [
+            "T0",
+            "T1",
+            "T2",
+            "T3"
+          ]
+        },
+        "seats": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "numbers": {
+          "type": "object",
+          "required": [
+            "max",
+            "types"
+          ],
+          "properties": {
+            "max": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "types": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "geographic",
+                  "mobile",
+                  "toll_free",
+                  "premium",
+                  "international"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false,
+          "description": "P4: the allowance and the number types that may be bought"
+        },
+        "channels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "voice",
+              "webrtc",
+              "chat",
+              "sms",
+              "whatsapp",
+              "email",
+              "social",
+              "video"
+            ]
+          }
+        },
+        "cpaas": {
+          "type": "boolean",
+          "description": "P6"
+        },
+        "outbound": {
+          "type": "object",
+          "required": [
+            "pstn",
+            "from_inbound",
+            "countries",
+            "international"
+          ],
+          "properties": {
+            "pstn": {
+              "type": "boolean",
+              "description": "P1"
+            },
+            "from_inbound": {
+              "type": "boolean",
+              "description": "P2: PSTN legs added to an inbound call"
+            },
+            "countries": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$",
+                "description": "ISO 3166-1 alpha-2"
+              }
+            },
+            "international": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "messaging": {
+          "type": "object",
+          "required": [
+            "sms",
+            "whatsapp"
+          ],
+          "properties": {
+            "sms": {
+              "type": "boolean"
+            },
+            "whatsapp": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "description": "P3"
+        },
+        "email": {
+          "type": "object",
+          "required": [
+            "outbound",
+            "daily_max"
+          ],
+          "properties": {
+            "outbound": {
+              "type": "boolean"
+            },
+            "daily_max": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false,
+          "description": "P9 (FE-026): outbound email from the platform (the email channel, campaigns)"
+        },
+        "caps": {
+          "type": "object",
+          "required": [
+            "daily_spend_minor",
+            "currency",
+            "concurrent_outbound",
+            "cps",
+            "concurrent_inbound",
+            "inbound_minutes_month",
+            "ai_minutes_month",
+            "max_interaction_s"
+          ],
+          "properties": {
+            "daily_spend_minor": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "An amount in the currency's minor unit (cents)"
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "description": "ISO 4217"
+            },
+            "concurrent_outbound": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cps": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "concurrent_inbound": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "P5: never 0 (callers are never silenced by machine)"
+            },
+            "inbound_minutes_month": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "P5, pooled per tenant"
+            },
+            "ai_minutes_month": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "P7"
+            },
+            "max_interaction_s": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 60,
+              "description": "FE-027: the longest interaction allowed (trials); null: no cap"
+            }
+          },
+          "additionalProperties": false
+        },
+        "retention_max_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "P8: the ceiling for new recordings; existing ones follow the deletion policy and the suspension countdown, never a lowered ceiling"
+        },
+        "trial_credit_pct": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Trial credit left, percent (banners at 50 and 20); null: no trial"
+        },
+        "period_end_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "computed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_ping": {
+      "type": "object",
+      "required": [
+        "pong"
+      ],
+      "properties": {
+        "pong": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_catalog": {
+      "type": "object",
+      "required": [
+        "version",
+        "currency",
+        "plans"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217"
+        },
+        "plans": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "plan_id",
+                  "kind",
+                  "name",
+                  "available",
+                  "features",
+                  "trial"
+                ],
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                  },
+                  "kind": {
+                    "const": "trial"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^[^\u0000-\u001f]+$"
+                  },
+                  "available": {
+                    "type": "boolean",
+                    "description": "False while the plan's Stripe prices drift from the catalog"
+                  },
+                  "features": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "trial": {
+                    "type": "object",
+                    "required": [
+                      "credit_minor",
+                      "currency",
+                      "days",
+                      "max_seats"
+                    ],
+                    "properties": {
+                      "credit_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "An amount in the currency's minor unit (cents)"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$",
+                        "description": "ISO 4217"
+                      },
+                      "days": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "max_seats": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "plan_id",
+                  "kind",
+                  "name",
+                  "available",
+                  "features",
+                  "seat_price_minor",
+                  "currency",
+                  "interval",
+                  "min_seats",
+                  "max_seats"
+                ],
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                  },
+                  "kind": {
+                    "const": "paid"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^[^\u0000-\u001f]+$"
+                  },
+                  "available": {
+                    "type": "boolean",
+                    "description": "False while the plan's Stripe prices drift from the catalog"
+                  },
+                  "features": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "seat_price_minor": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "An amount in the currency's minor unit (cents)"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$",
+                    "description": "ISO 4217"
+                  },
+                  "interval": {
+                    "enum": [
+                      "month"
+                    ]
+                  },
+                  "min_seats": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "max_seats": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_slug": {
+      "type": "object",
+      "required": [
+        "slug",
+        "available",
+        "reason"
+      ],
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A requested tenant id: the tenant_id format, 3 to 40 characters"
+        },
+        "available": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "A hint only; null: not checked"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "taken",
+                "reserved_word",
+                "unchecked"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_signup": {
+      "type": "object",
+      "required": [
+        "signup_id",
+        "state",
+        "slug",
+        "kind",
+        "plan_id",
+        "seats",
+        "trial",
+        "next",
+        "updated_at_ms"
+      ],
+      "properties": {
+        "signup_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "state": {
+          "enum": [
+            "verified",
+            "reserved",
+            "checkout_open",
+            "paid",
+            "card_saved",
+            "trial_refused",
+            "review",
+            "provisioning",
+            "bound",
+            "ready",
+            "needs_new_slug",
+            "stuck"
+          ]
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A requested tenant id: the tenant_id format, 3 to 40 characters"
+        },
+        "kind": {
+          "enum": [
+            "trial",
+            "paid"
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+        },
+        "seats": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "trial": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "granted",
+                "credit_minor",
+                "currency",
+                "expires_at_ms",
+                "refused"
+              ],
+              "properties": {
+                "granted": {
+                  "type": "boolean"
+                },
+                "credit_minor": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "An amount in the currency's minor unit (cents)"
+                },
+                "currency": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$",
+                  "description": "ISO 4217"
+                },
+                "expires_at_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "refused": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "already_used",
+                        "card_not_allowed",
+                        "not_eligible"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next": {
+          "enum": [
+            "checkout",
+            "wait",
+            "pick_slug",
+            "choose_paid",
+            "done",
+            "contact_support"
+          ],
+          "description": "The page's one next action"
+        },
+        "updated_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_checkout": {
+      "type": "object",
+      "required": [
+        "signup_id",
+        "kind",
+        "url",
+        "expires_at_ms"
+      ],
+      "properties": {
+        "signup_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "kind": {
+          "enum": [
+            "trial",
+            "paid"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://checkout\\.stripe\\.com/[^\\s]{1,2000}$",
+          "x-secret": true,
+          "description": "The hosted Stripe Checkout page; never logged"
+        },
+        "expires_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_entitlements": {
+      "type": "object",
+      "required": [
+        "entitlements"
+      ],
+      "properties": {
+        "entitlements": {
+          "$ref": "#/$defs/entitlement"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

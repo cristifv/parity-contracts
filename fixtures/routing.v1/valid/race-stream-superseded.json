@@ -1,0 +1,451 @@
+{
+  "description": "The latest stream of a replica wins; unacknowledged messages are redelivered every 2 s; acks are batched",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.routing.v1",
+  "pins": [
+    "N3",
+    "batched acks"
+  ],
+  "streams": {
+    "s": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    },
+    "a": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    },
+    "b": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      },
+      {
+        "tenant_id": "acme",
+        "queue_id": "support"
+      }
+    ],
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "agent_contact": "sip:agent-7f3a@acme.agents.example",
+        "queues": [
+          "sales"
+        ]
+      }
+    ],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "s",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "ms": "5000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800005000",
+        "ordering_at_ms": "1792800005000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800005000",
+            "ordering_at_ms": "1792800005000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1
+          },
+          "existing": false
+        }
+      },
+      "note": "setup"
+    },
+    {
+      "op": "advance",
+      "ms": "25000"
+    },
+    {
+      "op": "inject",
+      "what": "agent_ready",
+      "args": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a"
+      }
+    },
+    {
+      "op": "inject",
+      "what": "agent_answers",
+      "args": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "decision": "DECISION_ACCEPT",
+        "result": "accepted"
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "s",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "1",
+        "assigned": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042"
+          },
+          "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000002",
+          "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+          "agent_id": "agent-7f3a",
+          "agent_contact": "sip:agent-7f3a@acme.agents.example",
+          "deadline_ms": "1792800060000"
+        }
+      },
+      "note": "setup"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/ReportOutcome",
+      "message": "parity.routing.v1.ReportOutcomeRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "1"
+        },
+        "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000002",
+        "outcome": "OUTCOME_AGENT_LEG_FAILED"
+      },
+      "expect": {
+        "message": "parity.routing.v1.ReportOutcomeResponse",
+        "body": {
+          "existing": false,
+          "recorded": "OUTCOME_AGENT_LEG_FAILED"
+        }
+      },
+      "note": "setup: L4, offered again"
+    },
+    {
+      "op": "inject",
+      "what": "agent_answers",
+      "args": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "decision": "DECISION_ACCEPT",
+        "result": "accepted"
+      }
+    },
+    {
+      "op": "deliver",
+      "stream": "s",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "2",
+        "assigned": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042"
+          },
+          "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+          "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+          "agent_id": "agent-7f3a",
+          "agent_contact": "sip:agent-7f3a@acme.agents.example",
+          "deadline_ms": "1792800060000"
+        }
+      },
+      "note": "setup"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Acknowledge",
+      "message": "parity.routing.v1.AcknowledgeRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "acks": [
+          {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042",
+            "replica_id": "ie-bin-a-1",
+            "acked_delivery_seq": "2"
+          }
+        ]
+      },
+      "expect": {
+        "message": "parity.routing.v1.AcknowledgeResponse",
+        "body": {
+          "ignored": 0
+        }
+      },
+      "note": "setup"
+    },
+    {
+      "op": "advance",
+      "ms": "15000"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a2-0b4c-7d10-8e2f-3a4b5c6d7e8f",
+          "owner_epoch": "977",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "support"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800045000",
+        "ordering_at_ms": "1792800045000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000002",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "support"
+            },
+            "first_queued_at_ms": "1792800045000",
+            "ordering_at_ms": "1792800045000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1
+          },
+          "existing": false
+        }
+      },
+      "note": "setup: another call of the replica"
+    },
+    {
+      "op": "advance",
+      "ms": "16000"
+    },
+    {
+      "op": "call",
+      "stream": "a",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800061000"
+          }
+        }
+      },
+      "note": "stream A"
+    },
+    {
+      "op": "call",
+      "stream": "b",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800061000"
+          }
+        }
+      },
+      "note": "stream B, same replica_id: RE ends stream A with ABORTED / stream_superseded"
+    },
+    {
+      "op": "inject",
+      "what": "supervisor_force",
+      "args": {
+        "tenant_id": "acme",
+        "agent_id": "agent-7f3a",
+        "target": "TARGET_STATE_LOGGED_OUT"
+      },
+      "note": "0.11.0: a supervisor logs the agent out (agents.v1 ForceState)"
+    },
+    {
+      "op": "deliver",
+      "stream": "b",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "3",
+        "revoke": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042"
+          },
+          "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+          "reason": "agent_logged_out"
+        }
+      },
+      "note": "on stream B"
+    },
+    {
+      "op": "advance",
+      "ms": "2000"
+    },
+    {
+      "op": "deliver",
+      "stream": "b",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "3",
+        "revoke": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042"
+          },
+          "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+          "reason": "agent_logged_out"
+        }
+      },
+      "note": "redelivered after 2 s without an ack"
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Acknowledge",
+      "message": "parity.routing.v1.AcknowledgeRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "acks": [
+          {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042",
+            "replica_id": "ie-bin-a-1",
+            "acked_delivery_seq": "3"
+          },
+          {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a2-0b4c-7d10-8e2f-3a4b5c6d7e8f",
+            "owner_epoch": "977",
+            "replica_id": "ie-bin-a-1",
+            "acked_delivery_seq": "1"
+          }
+        ]
+      },
+      "expect": {
+        "message": "parity.routing.v1.AcknowledgeResponse",
+        "body": {
+          "ignored": 0
+        }
+      }
+    }
+  ]
+}

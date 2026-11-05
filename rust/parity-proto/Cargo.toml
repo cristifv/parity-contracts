@@ -1,0 +1,31 @@
+[package]
+name = "parity-proto"
+version = "0.2.0"
+description = "parity-contracts' protos for Rust: prost messages and tonic clients (TC ADR 0001 §7)"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Generates the services' servers too (for in-process fakes); clients are always generated.
+server = ["tonic/server", "tonic/router"]
+
+[dependencies]
+prost = "0.14.4"
+tonic = { version = "0.14.6", default-features = false, features = ["codegen", "channel"] }
+tonic-prost = "0.14.6"
+
+[build-dependencies]
+prost = "0.14.4"
+# Pure Rust: no protoc on the build machine.
+protox = "0.10.0"
+tonic-prost-build = { version = "0.14.6", default-features = false, features = ["transport"] }
+
+[dev-dependencies]
+prost-reflect = { version = "0.16", features = ["serde"] }
+serde_json = "1"
+
+[lints]
+workspace = true

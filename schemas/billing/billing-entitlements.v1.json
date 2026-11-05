@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/billing-entitlements/v1.json",
+  "title": "billing.entitlements, schema_version 1",
+  "description": "What a bound tenant may use: the commercial ceilings the console and the zone services enforce (CONVENTIONS.md 'Entitlements'). Compacted, keyed tenant:<tenant_id>; a null value is a tombstone. Headers tenant_id, schema_version, version (on tombstones too) and traceparent. version goes up by one per change; readers keep the highest and fail closed.",
+  "$ref": "#/$defs/entitlement",
+  "$defs": {
+    "entitlement": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "tenant_id",
+        "version",
+        "state",
+        "reason",
+        "plan_id",
+        "tier",
+        "seats",
+        "numbers",
+        "channels",
+        "cpaas",
+        "outbound",
+        "messaging",
+        "email",
+        "caps",
+        "retention_max_days",
+        "trial_credit_pct",
+        "period_end_ms",
+        "computed_at_ms"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "enum": [
+            "trial",
+            "trial_ended",
+            "active",
+            "grace",
+            "restricted",
+            "suspended",
+            "cancelled"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "^[a-z0-9_.:-]{1,80}$",
+          "description": "Why this version: plan, trial_credit, dunning, gate, override:<action id>"
+        },
+        "plan_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tier": {
+          "enum": [
+            "T0",
+            "T1",
+            "T2",
+            "T3"
+          ]
+        },
+        "seats": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "numbers": {
+          "type": "object",
+          "required": [
+            "max",
+            "types"
+          ],
+          "properties": {
+            "max": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "types": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "geographic",
+                  "mobile",
+                  "toll_free",
+                  "premium",
+                  "international"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false,
+          "description": "P4: the allowance and the number types that may be bought"
+        },
+        "channels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "voice",
+              "webrtc",
+              "chat",
+              "sms",
+              "whatsapp",
+              "email",
+              "social",
+              "video"
+            ]
+          }
+        },
+        "cpaas": {
+          "type": "boolean",
+          "description": "P6"
+        },
+        "outbound": {
+          "type": "object",
+          "required": [
+            "pstn",
+            "from_inbound",
+            "countries",
+            "international"
+          ],
+          "properties": {
+            "pstn": {
+              "type": "boolean",
+              "description": "P1"
+            },
+            "from_inbound": {
+              "type": "boolean",
+              "description": "P2: PSTN legs added to an inbound call"
+            },
+            "countries": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$",
+                "description": "ISO 3166-1 alpha-2"
+              }
+            },
+            "international": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "messaging": {
+          "type": "object",
+          "required": [
+            "sms",
+            "whatsapp"
+          ],
+          "properties": {
+            "sms": {
+              "type": "boolean"
+            },
+            "whatsapp": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "description": "P3"
+        },
+        "email": {
+          "type": "object",
+          "required": [
+            "outbound",
+            "daily_max"
+          ],
+          "properties": {
+            "outbound": {
+              "type": "boolean"
+            },
+            "daily_max": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false,
+          "description": "P9 (FE-026): outbound email from the platform (the email channel, campaigns)"
+        },
+        "caps": {
+          "type": "object",
+          "required": [
+            "daily_spend_minor",
+            "currency",
+            "concurrent_outbound",
+            "cps",
+            "concurrent_inbound",
+            "inbound_minutes_month",
+            "ai_minutes_month",
+            "max_interaction_s"
+          ],
+          "properties": {
+            "daily_spend_minor": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "An amount in the currency's minor unit (cents)"
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "description": "ISO 4217"
+            },
+            "concurrent_outbound": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cps": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "concurrent_inbound": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "P5: never 0 (callers are never silenced by machine)"
+            },
+            "inbound_minutes_month": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "P5, pooled per tenant"
+            },
+            "ai_minutes_month": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "P7"
+            },
+            "max_interaction_s": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 60,
+              "description": "FE-027: the longest interaction allowed (trials); null: no cap"
+            }
+          },
+          "additionalProperties": false
+        },
+        "retention_max_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "P8: the ceiling for new recordings; existing ones follow the deletion policy and the suspension countdown, never a lowered ceiling"
+        },
+        "trial_credit_pct": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Trial credit left, percent (banners at 50 and 20); null: no trial"
+        },
+        "period_end_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "computed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

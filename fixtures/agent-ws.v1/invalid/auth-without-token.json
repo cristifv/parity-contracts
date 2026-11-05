@@ -1,0 +1,13 @@
+{
+  "description": "No token",
+  "kind": "ws",
+  "writer_valid": false,
+  "direction": "to_gateway",
+  "frame": {
+    "v": 1,
+    "type": "auth"
+  },
+  "violates": [
+    "schema"
+  ]
+}

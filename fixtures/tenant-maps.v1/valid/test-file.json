@@ -1,0 +1,104 @@
+{
+  "description": "A test file: fictional numbers, reserved domains, agent ids",
+  "kind": "tenant_maps",
+  "writer_valid": true,
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "acme",
+        "name": "Acme Ltd",
+        "tier": "small",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550100100"
+        ],
+        "sip_domains": [
+          "acme.eu1.platform.example"
+        ]
+      },
+      {
+        "id": "globex",
+        "name": "Globex Ltd",
+        "tier": "mid",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550101100"
+        ],
+        "sip_domains": [
+          "globex.eu1.platform.example"
+        ]
+      },
+      {
+        "id": "initech",
+        "name": "Initech Group",
+        "tier": "enterprise"
+      },
+      {
+        "id": "initech-de",
+        "name": "initech-de",
+        "parent": "initech",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550102100"
+        ],
+        "sip_domains": [
+          "initech-de.eu1.platform.example"
+        ]
+      },
+      {
+        "id": "initech-uk",
+        "name": "initech-uk",
+        "parent": "initech",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550103100"
+        ],
+        "sip_domains": [
+          "initech-uk.eu1.platform.example"
+        ]
+      }
+    ],
+    "test": {
+      "agents": {
+        "acme": [
+          "agent-a1"
+        ],
+        "globex": [
+          "agent-g1"
+        ],
+        "initech-de": [
+          "agent-i1"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "description": "The platform's shared test tenants (parity-contracts 0.4.0). Test data only: fictional numbers (+1 555 01xx xxx, never dialable: NPA 555 and an NXX starting with 0), SIP domains under .example, agent ids without secrets. Every tenant lives in cell eu1a. Number blocks: acme +1 555 0100 xxx, globex +1 555 0101 xxx, initech-de +1 555 0102 xxx, initech-uk +1 555 0103 xxx (acme's first two are interaction-engine's demo numbers). The parent initech takes no traffic: its agents and numbers belong to initech-de and initech-uk. parity-store loads it with --parity-store.maps-file and --parity-store.seed.allow-test-data=true.",
+  "tenants": [
+    {
+      "id": "acme",
+      "name": "Acme Ltd",
+      "tier": "small",
+      "placement": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-a",
+        "media_track": "blue"
+      },
+      "numbers": [
+        "+15550100100",
+        "+15550100200",
+        "+15550100300",
+        "+15550100400"
+      ],
+      "sip_domains": [
+        "acme.eu1.platform.example"
+      ]
+    },
+    {
+      "id": "globex",
+      "name": "Globex GmbH",
+      "tier": "mid",
+      "placement": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-b",
+        "media_track": "green"
+      },
+      "numbers": [
+        "+15550101100",
+        "+15550101200",
+        "+15550101300",
+        "+15550101400"
+      ],
+      "sip_domains": [
+        "globex.eu1.platform.example"
+      ]
+    },
+    {
+      "id": "initech",
+      "name": "Initech Group",
+      "tier": "enterprise"
+    },
+    {
+      "id": "initech-de",
+      "name": "Initech Germany",
+      "parent": "initech",
+      "placement": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-a",
+        "media_track": "blue"
+      },
+      "numbers": [
+        "+15550102100",
+        "+15550102200",
+        "+15550102300"
+      ],
+      "sip_domains": [
+        "initech-de.eu1.platform.example"
+      ]
+    },
+    {
+      "id": "initech-uk",
+      "name": "Initech UK",
+      "parent": "initech",
+      "placement": {
+        "home_zone": "eu1",
+        "failover_zone": "eu2",
+        "zone": "eu1",
+        "cell": "eu1a",
+        "deployment_unit": "bin-c",
+        "media_track": "blue"
+      },
+      "numbers": [
+        "+15550103100",
+        "+15550103200",
+        "+15550103300"
+      ],
+      "sip_domains": [
+        "initech-uk.eu1.platform.example"
+      ]
+    }
+  ],
+  "test": {
+    "agents": {
+      "acme": [
+        "agent-a1",
+        "agent-a2",
+        "agent-a3"
+      ],
+      "globex": [
+        "agent-g1",
+        "agent-g2",
+        "agent-g3"
+      ],
+      "initech-de": [
+        "agent-i1",
+        "agent-i2"
+      ],
+      "initech-uk": [
+        "agent-i3",
+        "agent-i4"
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "description": "failover_zone and media_track may be left out; numbers and sip_domains too",
+  "kind": "tenant_maps",
+  "writer_valid": true,
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "acme",
+        "name": "Acme Ltd",
+        "tier": "small",
+        "placement": {
+          "home_zone": "eu1",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a"
+        }
+      }
+    ]
+  }
+}

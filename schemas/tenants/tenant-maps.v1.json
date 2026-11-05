@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/tenant-maps/v1.json",
+  "title": "parity-store's tenant maps file, schema_version 1",
+  "description": "Where each tenant lives (ARCHITECTURE.md §3.25): its tier and parent, its placement, its numbers and SIP domains. parity-store reads it at startup (--parity-store.maps-file; YAML, and JSON is YAML) and stops on an invalid file. The structure is here; the cross-tenant rules (unique ids and numbers and domains, parents, tiers, placements, and the test-file rules) are CONVENTIONS.md's 'Tenant maps', checked by contract-check and by parity-store with the same rule codes. tenant_id's format is defined here (parity-store owns it). A file with a 'test' section is test data: parity-store refuses it unless told to accept test data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenants"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "tenants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/tenant"
+      }
+    },
+    "test": {
+      "$ref": "#/$defs/test"
+    }
+  },
+  "$defs": {
+    "tenant_id": {
+      "description": "A DNS label: voice-api takes the tenant from the first label of a host name. Normative here (parity-store owns the format).",
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "location_name": {
+      "description": "A zone, cell, deployment unit or media track name (eu1, eu1a, bin-a, blue). Not checked against a list yet.",
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+    },
+    "tenant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tenant_id"
+        },
+        "name": {
+          "description": "The tenant's display name: a business name, never a person's. No control characters.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\u0000-\u001f\u007f]+$"
+        },
+        "tier": {
+          "description": "Required on a tenant without a parent. A sub-tenant takes its parent's tier and may repeat it.",
+          "enum": [
+            "small",
+            "mid",
+            "enterprise"
+          ]
+        },
+        "parent": {
+          "description": "The enterprise tenant this one belongs to (one level only).",
+          "$ref": "#/$defs/tenant_id"
+        },
+        "placement": {
+          "$ref": "#/$defs/placement"
+        },
+        "numbers": {
+          "description": "The tenant's numbers (DIDs). Each belongs to one tenant across the platform.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\+[1-9][0-9]{6,14}$",
+            "x-pii": "phone"
+          }
+        },
+        "sip_domains": {
+          "description": "The tenant's SIP domains, lowercase. Each belongs to one tenant across the platform.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sip_domain"
+          }
+        }
+      }
+    },
+    "placement": {
+      "description": "Where a tenant that takes traffic is served. A parent has none.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "home_zone",
+        "zone",
+        "cell",
+        "deployment_unit"
+      ],
+      "properties": {
+        "home_zone": {
+          "$ref": "#/$defs/location_name"
+        },
+        "failover_zone": {
+          "$ref": "#/$defs/location_name"
+        },
+        "zone": {
+          "$ref": "#/$defs/location_name"
+        },
+        "cell": {
+          "$ref": "#/$defs/location_name"
+        },
+        "deployment_unit": {
+          "$ref": "#/$defs/location_name"
+        },
+        "media_track": {
+          "$ref": "#/$defs/location_name"
+        }
+      }
+    },
+    "sip_domain": {
+      "description": "A lowercase host name of at least two labels.",
+      "type": "string",
+      "maxLength": 253,
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "test": {
+      "description": "Test data only (parity-contracts' tenants/test-tenants.v1.json). Its presence makes the file a test file: every number must be fictional and every SIP domain under a reserved name.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "agents"
+      ],
+      "properties": {
+        "agents": {
+          "description": "Test agent ids per tenant: ids only, no secrets. Unique across the file.",
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/tenant_id"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

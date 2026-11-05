@@ -1,0 +1,504 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/tenant-routing/replies/v1.json",
+  "title": "parity-rs tenant routing answers (0.16.0)",
+  "description": "Answers on the request's reply_to, keyed like the request. result's shape follows the command (the $defs name them: route, routes, topology, saga, sagas, accepted, plan); readers ignore fields they don't know.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "id",
+        "ok",
+        "result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "id",
+        "ok",
+        "error"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+        },
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "enum": [
+                "bad_request",
+                "forbidden",
+                "not_found",
+                "wrong_zone",
+                "conflict",
+                "unavailable",
+                "internal"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "rule": {
+              "enum": [
+                "version_mismatch",
+                "saga_active",
+                "unit_busy",
+                "unit_role",
+                "unit_not_ready",
+                "release_mismatch",
+                "tenant_pinned",
+                "residency",
+                "unknown_zone",
+                "unknown_unit",
+                "same_placement",
+                "parent_takes_traffic",
+                "no_capacity",
+                "needs_operator",
+                "past_cutover",
+                "wrong_state",
+                "ring_moved",
+                "zone_copy_unavailable",
+                "rollout_active",
+                "not_leader"
+              ]
+            },
+            "owner_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+              "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tenant_id",
+        "placement",
+        "version"
+      ],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "tier": {
+          "enum": [
+            "small",
+            "mid",
+            "enterprise"
+          ]
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+              "description": "A DNS label (CONVENTIONS \"Identifiers and values\")."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "placement": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "home_zone",
+                "zone",
+                "cell",
+                "deployment_unit"
+              ],
+              "description": "parity-store's placement fields (CONVENTIONS \"Tenant maps\"). `cell` names the zone that serves the tenant (zone = cell); records written before 2026-11-03 hold the region in `zone`, `home_zone` and `failover_zone`. parity-rs writes zone = home_zone = cell.",
+              "properties": {
+                "home_zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "failover_zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "cell": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "deployment_unit": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "media_track": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "parity-store's placement version the operator saw (1-based; 0: none yet)."
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "owner_zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "assignment": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "unit"
+              ],
+              "properties": {
+                "unit": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "media_track": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "epoch": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              }
+            }
+          ]
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role"
+              ],
+              "properties": {
+                "role": {
+                  "enum": [
+                    "live",
+                    "canary",
+                    "previous",
+                    "empty",
+                    "draining",
+                    "failed"
+                  ]
+                },
+                "release": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+                },
+                "ready": {
+                  "type": "boolean"
+                },
+                "health": {
+                  "enum": [
+                    "ok",
+                    "degraded",
+                    "failing",
+                    "unknown"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "pin": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "until_ms"
+              ],
+              "properties": {
+                "until_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 500,
+                  "description": "Why: shown in the audit and on the saga. No personal data."
+                }
+              }
+            }
+          ]
+        },
+        "active_saga": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "saga_id",
+                "kind",
+                "state"
+              ],
+              "properties": {
+                "saga_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                  "description": "UUIDv7, lowercase."
+                },
+                "kind": {
+                  "enum": [
+                    "placement",
+                    "placement_update",
+                    "unit_move",
+                    "zone_move",
+                    "rollout",
+                    "drain"
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "accepted",
+                    "assigning",
+                    "recording",
+                    "preparing",
+                    "fencing",
+                    "switching",
+                    "handing_over",
+                    "compensating",
+                    "copying",
+                    "ready_to_cut",
+                    "cutting_over",
+                    "draining",
+                    "finishing",
+                    "canary_ready",
+                    "ring_moving",
+                    "ring_baking",
+                    "promoting",
+                    "watching",
+                    "paused",
+                    "rolling_back",
+                    "drained",
+                    "blocked",
+                    "done",
+                    "aborted",
+                    "cancelled"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit",
+        "role"
+      ],
+      "properties": {
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "zone": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+        },
+        "role": {
+          "enum": [
+            "live",
+            "canary",
+            "previous",
+            "empty",
+            "draining",
+            "failed"
+          ]
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "health": {
+          "enum": [
+            "ok",
+            "degraded",
+            "failing",
+            "unknown"
+          ]
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tenant_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "accepted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accepted"
+      ],
+      "properties": {
+        "accepted": {
+          "const": true
+        },
+        "saga_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "UUIDv7, lowercase."
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "placement": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "home_zone",
+                "zone",
+                "cell",
+                "deployment_unit"
+              ],
+              "description": "parity-store's placement fields (CONVENTIONS \"Tenant maps\"). `cell` names the zone that serves the tenant (zone = cell); records written before 2026-11-03 hold the region in `zone`, `home_zone` and `failover_zone`. parity-rs writes zone = home_zone = cell.",
+              "properties": {
+                "home_zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "failover_zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "zone": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "cell": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "deployment_unit": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                },
+                "media_track": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+                  "description": "A region, zone (= cell), deployment unit (= bin) or media track name (eu1, eu1a, bin-a, blue)."
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

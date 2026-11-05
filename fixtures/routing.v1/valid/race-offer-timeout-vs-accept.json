@@ -1,0 +1,234 @@
+{
+  "description": "An offer not answered by expires_at_ms goes to the next agent; a late accept loses; the entry keeps its enqueue time",
+  "kind": "grpc",
+  "writer_valid": true,
+  "package": "parity.routing.v1",
+  "pins": [
+    "G5",
+    "agents offer expiry",
+    "L1",
+    "queue-ordering ruling"
+  ],
+  "streams": {
+    "r1": {
+      "replica_id": "ie-bin-a-1",
+      "bin": "bin-a"
+    }
+  },
+  "given": {
+    "start_ms": "1792800000000",
+    "leader_epoch": "7",
+    "bin": "bin-a",
+    "tenants": [
+      "acme"
+    ],
+    "queues": [
+      {
+        "tenant_id": "acme",
+        "queue_id": "sales"
+      }
+    ],
+    "agents": [
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-a1",
+        "agent_contact": "sip:agent-a1@acme.agents.example",
+        "queues": [
+          "sales"
+        ],
+        "ready_since_ms": "1792799980000"
+      },
+      {
+        "tenant_id": "acme",
+        "agent_id": "agent-a2",
+        "agent_contact": "sip:agent-a2@acme.agents.example",
+        "queues": [
+          "sales"
+        ],
+        "ready_since_ms": "1792799990000"
+      }
+    ],
+    "offer_timeout_ms": "15000",
+    "assignment_deadline_ms": "30000"
+  },
+  "steps": [
+    {
+      "op": "call",
+      "stream": "r1",
+      "method": "parity.routing.v1.RoutingService/Watch",
+      "message": "parity.routing.v1.WatchRequest",
+      "metadata": {
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "replica_id": "ie-bin-a-1",
+        "bin": "bin-a"
+      },
+      "expect": {
+        "message": "parity.routing.v1.WatchResponse",
+        "body": {
+          "leader_epoch": "7",
+          "delivery_seq": "0",
+          "heartbeat": {
+            "at_ms": "1792800000000"
+          }
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "0"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800000000",
+        "ordering_at_ms": "1792800000000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800000000",
+            "ordering_at_ms": "1792800000000",
+            "state": "ENTRY_STATE_WAITING",
+            "position": 1
+          },
+          "existing": false
+        }
+      }
+    },
+    {
+      "op": "inject",
+      "what": "agent_answers",
+      "args": {
+        "tenant_id": "acme",
+        "agent_id": "agent-a2",
+        "decision": "DECISION_ACCEPT",
+        "result": "no_offer"
+      },
+      "note": "the offer went to agent-a1, ready the longest"
+    },
+    {
+      "op": "advance",
+      "ms": "15000",
+      "note": "now = the offer's expires_at_ms"
+    },
+    {
+      "op": "inject",
+      "what": "agent_answers",
+      "args": {
+        "tenant_id": "acme",
+        "agent_id": "agent-a1",
+        "decision": "DECISION_ACCEPT",
+        "result": "offer_gone"
+      },
+      "note": "an answer at or after expires_at_ms loses: the offer expired (agent-a1: not ready, missed_offer)"
+    },
+    {
+      "op": "inject",
+      "what": "agent_answers",
+      "args": {
+        "tenant_id": "acme",
+        "agent_id": "agent-a2",
+        "decision": "DECISION_ACCEPT",
+        "result": "accepted"
+      },
+      "note": "re-offered to the next agent"
+    },
+    {
+      "op": "deliver",
+      "stream": "r1",
+      "message": "parity.routing.v1.WatchResponse",
+      "body": {
+        "leader_epoch": "7",
+        "delivery_seq": "1",
+        "assigned": {
+          "target": {
+            "tenant_id": "acme",
+            "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+            "owner_epoch": "1042"
+          },
+          "reservation_id": "0192f6a1-9100-7ccc-8ddd-000000000001",
+          "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+          "agent_id": "agent-a2",
+          "agent_contact": "sip:agent-a2@acme.agents.example",
+          "deadline_ms": "1792800045000"
+        }
+      }
+    },
+    {
+      "op": "call",
+      "method": "parity.routing.v1.RoutingService/Enqueue",
+      "message": "parity.routing.v1.EnqueueRequest",
+      "metadata": {
+        "tenant-id": "acme",
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      },
+      "body": {
+        "owner": {
+          "tenant_id": "acme",
+          "interaction_id": "0192f6a1-7c3e-7b21-9a4d-5e6f70819203",
+          "owner_epoch": "1042",
+          "replica_id": "ie-bin-a-1",
+          "acked_delivery_seq": "1"
+        },
+        "enqueue_seq": 1,
+        "target": {
+          "queue_id": "sales"
+        },
+        "priority": 0,
+        "first_queued_at_ms": "1792800000000",
+        "ordering_at_ms": "1792800000000",
+        "channel": "CHANNEL_VOICE",
+        "context": {
+          "language": "en-GB"
+        },
+        "reason": "ENQUEUE_REASON_NEW",
+        "placement": "PLACEMENT_BY_ORDERING_TIME"
+      },
+      "expect": {
+        "message": "parity.routing.v1.EnqueueResponse",
+        "body": {
+          "entry": {
+            "entry_id": "0192f6a1-9000-7aaa-8bbb-000000000001",
+            "enqueue_seq": 1,
+            "target": {
+              "queue_id": "sales"
+            },
+            "first_queued_at_ms": "1792800000000",
+            "ordering_at_ms": "1792800000000",
+            "state": "ENTRY_STATE_RESERVED"
+          },
+          "existing": true
+        }
+      },
+      "note": "a retried Enqueue reads the entry back: RESERVED, with its original first_queued_at_ms and ordering_at_ms"
+    }
+  ]
+}

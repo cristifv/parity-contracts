@@ -1,0 +1,35 @@
+{
+  "description": "A sub-tenant may repeat its parent's tier",
+  "kind": "tenant_maps",
+  "writer_valid": true,
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "initech",
+        "name": "Initech Group",
+        "tier": "enterprise"
+      },
+      {
+        "id": "initech-de",
+        "name": "initech-de",
+        "parent": "initech",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550102100"
+        ],
+        "sip_domains": [
+          "initech-de.eu1.platform.example"
+        ],
+        "tier": "enterprise"
+      }
+    ]
+  }
+}

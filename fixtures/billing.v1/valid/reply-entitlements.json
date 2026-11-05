@@ -1,0 +1,71 @@
+{
+  "description": "get_entitlements' answer",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "replies.admin-console",
+    "key": "admin-api-1:get-entitlements-0001",
+    "headers": {
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "id": "admin-api-1:get-entitlements-0001",
+      "ok": true,
+      "result": {
+        "entitlements": {
+          "schema_version": 1,
+          "tenant_id": "acme",
+          "version": 3,
+          "state": "active",
+          "reason": "plan",
+          "plan_id": "team",
+          "tier": "T1",
+          "seats": 10,
+          "numbers": {
+            "max": 2,
+            "types": [
+              "geographic"
+            ]
+          },
+          "channels": [
+            "voice",
+            "webrtc",
+            "chat"
+          ],
+          "cpaas": false,
+          "outbound": {
+            "pstn": false,
+            "from_inbound": false,
+            "countries": [],
+            "international": false
+          },
+          "messaging": {
+            "sms": false,
+            "whatsapp": false
+          },
+          "email": {
+            "outbound": false,
+            "daily_max": 0
+          },
+          "caps": {
+            "daily_spend_minor": 2500,
+            "currency": "EUR",
+            "concurrent_outbound": 0,
+            "cps": 0,
+            "concurrent_inbound": 10,
+            "inbound_minutes_month": 10000,
+            "ai_minutes_month": 300,
+            "max_interaction_s": null
+          },
+          "retention_max_days": 90,
+          "trial_credit_pct": null,
+          "period_end_ms": 1795392000000,
+          "computed_at_ms": 1792800000000
+        }
+      }
+    }
+  }
+}

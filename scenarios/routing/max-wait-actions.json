@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "name": "max-wait-actions",
+  "description": "Variant (CR-055): too few agents for the traffic, patient callers, short max waits: every max-wait action fires: sales moves callers to sales-overflow (QUEUE), which disconnects them (DISCONNECT); support goes to a flow step",
+  "seed": 11,
+  "duration_s": 1800,
+  "bin": "bin-a",
+  "tenants": [
+    {
+      "id": "acme",
+      "queues": [
+        {
+          "id": "sales",
+          "max_wait_s": 60,
+          "max_wait_action": {
+            "action": "queue",
+            "queue_id": "sales-overflow"
+          },
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 240
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "fixed",
+            "s": 300
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 1200
+          }
+        },
+        {
+          "id": "sales-overflow",
+          "max_wait_s": 60,
+          "max_wait_action": {
+            "action": "disconnect"
+          },
+          "arrivals": {
+            "kind": "list",
+            "at_s": []
+          },
+          "handle_time": {
+            "kind": "fixed",
+            "s": 300
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 1200
+          }
+        },
+        {
+          "id": "support",
+          "max_wait_s": 45,
+          "max_wait_action": {
+            "action": "flow_step",
+            "flow_step": "voicemail-menu"
+          },
+          "arrivals": {
+            "kind": "poisson",
+            "points": [
+              {
+                "t_s": 0,
+                "per_hour": 90
+              }
+            ]
+          },
+          "handle_time": {
+            "kind": "fixed",
+            "s": 300
+          },
+          "patience": {
+            "kind": "exponential",
+            "mean_s": 1200
+          }
+        }
+      ],
+      "agents": [
+        {
+          "count": 1,
+          "ids": [
+            "agent-a1"
+          ],
+          "queues": [
+            "sales",
+            "sales-overflow"
+          ],
+          "site": "site-a"
+        },
+        {
+          "count": 1,
+          "ids": [
+            "agent-a2"
+          ],
+          "queues": [
+            "support"
+          ],
+          "site": "site-a"
+        }
+      ],
+      "behaviour": {
+        "answer_delay": {
+          "kind": "fixed",
+          "s": 2
+        },
+        "wrap_up": {
+          "kind": "fixed",
+          "s": 10
+        }
+      }
+    }
+  ],
+  "expectations": {
+    "invariants": "all",
+    "latency_ms": {
+      "p99": 50,
+      "max": 250
+    },
+    "rss_mib_max": 512,
+    "must_occur": [
+      "overflow_queue",
+      "overflow_disconnect",
+      "overflow_flow_step"
+    ]
+  }
+}

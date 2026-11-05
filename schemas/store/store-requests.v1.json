@@ -1,0 +1,511 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/store-requests/v1.json",
+  "title": "parity-store commands, schema_version 1",
+  "description": "On tenant.store.requests (read commands only: a command marked x-admin there is answered forbidden) and tenant.store.admin.requests (every command but the placement writes; written only by admin-console, by Kafka ACL). parity-store stores and decides nothing: placements are parity-rs's decisions. Since 0.16.0 set_placement and delete_placement go on tenant.store.placement.requests (written only by parity-rs, by Kafka ACL; the full record with expected_version, which replaces the whole row); there anything but them and the reads is forbidden, and the admin topic answers them forbidden (rule placement_via_parity_rs; parity-store's setting placement.admin-writes=allowed keeps admin-console's labelled temporary bypass until it places through parity-rs). Keyed by the tenant the command acts on (else by id). reply_to is required and must name a replies.* topic; a request without a valid id and reply_to is never answered (dead-lettered).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "cmd",
+    "id",
+    "reply_to"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "cmd": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,200}$"
+    },
+    "reply_to": {
+      "type": "string",
+      "pattern": "^replies\\.[a-z0-9][a-z0-9.-]{0,200}$"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/cmd_ping"
+    },
+    {
+      "$ref": "#/$defs/cmd_get_tenant"
+    },
+    {
+      "$ref": "#/$defs/cmd_list_tenants"
+    },
+    {
+      "$ref": "#/$defs/cmd_get_placement"
+    },
+    {
+      "$ref": "#/$defs/cmd_list_placements"
+    },
+    {
+      "$ref": "#/$defs/cmd_list_numbers"
+    },
+    {
+      "$ref": "#/$defs/cmd_list_sip_domains"
+    },
+    {
+      "$ref": "#/$defs/cmd_lookup_number"
+    },
+    {
+      "$ref": "#/$defs/cmd_lookup_sip_domain"
+    },
+    {
+      "$ref": "#/$defs/cmd_get_digest"
+    },
+    {
+      "$ref": "#/$defs/cmd_put_tenant"
+    },
+    {
+      "$ref": "#/$defs/cmd_delete_tenant"
+    },
+    {
+      "$ref": "#/$defs/cmd_set_placement"
+    },
+    {
+      "$ref": "#/$defs/cmd_delete_placement"
+    },
+    {
+      "$ref": "#/$defs/cmd_add_number"
+    },
+    {
+      "$ref": "#/$defs/cmd_remove_number"
+    },
+    {
+      "$ref": "#/$defs/cmd_add_sip_domain"
+    },
+    {
+      "$ref": "#/$defs/cmd_remove_sip_domain"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "cmd_ping": {
+      "type": "object",
+      "required": [
+        "cmd"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "ping"
+        }
+      }
+    },
+    "cmd_get_tenant": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "get_tenant"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      }
+    },
+    "cmd_list_tenants": {
+      "type": "object",
+      "required": [
+        "cmd"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "list_tenants"
+        },
+        "after": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "description": "Default 100"
+        },
+        "parent": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      }
+    },
+    "cmd_get_placement": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "get_placement"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      }
+    },
+    "cmd_list_placements": {
+      "type": "object",
+      "required": [
+        "cmd"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "list_placements"
+        },
+        "after": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "description": "Default 100"
+        }
+      }
+    },
+    "cmd_list_numbers": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "list_numbers"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "after": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-pii": "phone"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "description": "Default 100"
+        }
+      }
+    },
+    "cmd_list_sip_domains": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "list_sip_domains"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "after": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "description": "Default 100"
+        }
+      }
+    },
+    "cmd_lookup_number": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "number"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "lookup_number"
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-pii": "phone"
+        }
+      }
+    },
+    "cmd_lookup_sip_domain": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "domain"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "lookup_sip_domain"
+        },
+        "domain": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      }
+    },
+    "cmd_get_digest": {
+      "type": "object",
+      "required": [
+        "cmd"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "get_digest"
+        }
+      }
+    },
+    "cmd_put_tenant": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id",
+        "name"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "put_tenant"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\u0000-\u001f]+$"
+        },
+        "tier": {
+          "enum": [
+            "small",
+            "mid",
+            "enterprise"
+          ]
+        },
+        "parent": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic locking: the current version must equal this (0: the tenant, or the placement, must not exist). Left out: unconditional"
+        }
+      },
+      "x-admin": true
+    },
+    "cmd_delete_tenant": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "delete_tenant"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic locking: the current version must equal this (0: the tenant, or the placement, must not exist). Left out: unconditional"
+        }
+      },
+      "x-admin": true
+    },
+    "cmd_set_placement": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id",
+        "placement"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "set_placement"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "placement": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "home_zone",
+            "zone",
+            "cell",
+            "deployment_unit"
+          ],
+          "properties": {
+            "home_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            "failover_zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            "zone": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            "cell": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            "deployment_unit": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            },
+            "media_track": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+            }
+          }
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic locking: the current version must equal this (0: the tenant, or the placement, must not exist). Left out: unconditional"
+        }
+      },
+      "x-admin": true
+    },
+    "cmd_delete_placement": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "delete_placement"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic locking: the current version must equal this (0: the tenant, or the placement, must not exist). Left out: unconditional"
+        }
+      },
+      "x-admin": true
+    },
+    "cmd_add_number": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id",
+        "number"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "add_number"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-pii": "phone"
+        }
+      },
+      "x-admin": true
+    },
+    "cmd_remove_number": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id",
+        "number"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "remove_number"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-pii": "phone"
+        }
+      },
+      "x-admin": true
+    },
+    "cmd_add_sip_domain": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id",
+        "domain"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "add_sip_domain"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "domain": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      },
+      "x-admin": true
+    },
+    "cmd_remove_sip_domain": {
+      "type": "object",
+      "required": [
+        "cmd",
+        "tenant_id",
+        "domain"
+      ],
+      "properties": {
+        "cmd": {
+          "const": "remove_sip_domain"
+        },
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "domain": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      },
+      "x-admin": true
+    }
+  }
+}

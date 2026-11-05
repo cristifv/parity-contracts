@@ -1,0 +1,900 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/interaction-events/v1.json",
+  "title": "interaction.events, schema_version 1",
+  "description": "Every event interaction-engine publishes on interaction.events, keyed by interaction_id, with the headers tenant_id, interaction_id, schema_version and traceparent (CONVENTIONS.md). Strict for writers; readers ignore unknown fields and types. Reserved type names are listed in x-reserved and are not emitted yet.",
+  "x-reserved": [
+    "consult_started",
+    "consult_ended",
+    "conference_started",
+    "conference_ended",
+    "party_added",
+    "party_removed",
+    "voicemail_left",
+    "callback_requested",
+    "supervisor_joined",
+    "supervisor_left",
+    "abandoned",
+    "silence_started",
+    "silence_ended"
+  ],
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "#/$defs/envelope"
+    }
+  ],
+  "oneOf": [
+    {
+      "$ref": "#/$defs/type_created"
+    },
+    {
+      "$ref": "#/$defs/type_initiated"
+    },
+    {
+      "$ref": "#/$defs/type_ringing"
+    },
+    {
+      "$ref": "#/$defs/type_answered"
+    },
+    {
+      "$ref": "#/$defs/type_queued"
+    },
+    {
+      "$ref": "#/$defs/type_dequeued"
+    },
+    {
+      "$ref": "#/$defs/type_agent_connected"
+    },
+    {
+      "$ref": "#/$defs/type_agent_disconnected"
+    },
+    {
+      "$ref": "#/$defs/type_hold_started"
+    },
+    {
+      "$ref": "#/$defs/type_hold_ended"
+    },
+    {
+      "$ref": "#/$defs/type_transferred"
+    },
+    {
+      "$ref": "#/$defs/type_leg_added"
+    },
+    {
+      "$ref": "#/$defs/type_leg_removed"
+    },
+    {
+      "$ref": "#/$defs/type_consent_decided"
+    },
+    {
+      "$ref": "#/$defs/type_recording_started"
+    },
+    {
+      "$ref": "#/$defs/type_recording_stopped"
+    },
+    {
+      "$ref": "#/$defs/type_ended"
+    },
+    {
+      "$ref": "#/$defs/type_closed"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "uuid7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+      "description": "A DNS label. parity-store owns the format; CONVENTIONS.md holds the normative copy."
+    },
+    "opaque_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "description": "An opaque id (agent, supervisor). Never an email address."
+    },
+    "queue_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    },
+    "ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "envelope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "event_id",
+        "type",
+        "interaction_id",
+        "tenant_id",
+        "seq",
+        "owner_epoch",
+        "at_ms",
+        "channel",
+        "direction",
+        "cpaas"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "event_id": {
+          "$ref": "#/$defs/uuid7"
+        },
+        "type": {
+          "type": "string"
+        },
+        "interaction_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/tenant_id"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "owner_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "at_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "voice"
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "inbound",
+            "outbound"
+          ]
+        },
+        "cpaas": {
+          "type": "boolean"
+        },
+        "conversation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "customer_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{16,128}$",
+          "description": "A pseudonym (Q17). Never a phone number."
+        }
+      }
+    },
+    "type_created": {
+      "title": "created",
+      "properties": {
+        "type": {
+          "const": "created"
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "pstn",
+            "agent",
+            "api",
+            "callback"
+          ]
+        },
+        "parent_interaction_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "flow": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "flow_version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "type",
+        "origin"
+      ]
+    },
+    "type_initiated": {
+      "title": "initiated",
+      "properties": {
+        "type": {
+          "const": "initiated"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "type_ringing": {
+      "title": "ringing",
+      "properties": {
+        "type": {
+          "const": "ringing"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "type_answered": {
+      "title": "answered",
+      "properties": {
+        "type": {
+          "const": "answered"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "type_queued": {
+      "title": "queued",
+      "properties": {
+        "type": {
+          "const": "queued"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/queue_id"
+        },
+        "entry_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "enqueue_seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "first_queued_at_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "ordering_at_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "new",
+            "transfer",
+            "overflow",
+            "agent_lost",
+            "consult"
+          ]
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expected_wait_s": {
+          "$ref": "#/$defs/count"
+        }
+      },
+      "required": [
+        "type",
+        "queue_id",
+        "entry_id",
+        "enqueue_seq",
+        "first_queued_at_ms",
+        "ordering_at_ms",
+        "reason"
+      ]
+    },
+    "type_dequeued": {
+      "title": "dequeued",
+      "properties": {
+        "type": {
+          "const": "dequeued"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/queue_id"
+        },
+        "entry_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "assigned",
+            "abandoned",
+            "transferred",
+            "callback",
+            "voicemail",
+            "overflow",
+            "ended",
+            "consult_canceled"
+          ]
+        },
+        "wait_ms": {
+          "$ref": "#/$defs/duration_ms",
+          "description": "This entry's wait, since its own queued event."
+        },
+        "total_wait_ms": {
+          "$ref": "#/$defs/duration_ms",
+          "description": "The sum of the time spent queued in every entry of the interaction so far, this one included."
+        }
+      },
+      "required": [
+        "type",
+        "queue_id",
+        "entry_id",
+        "reason",
+        "wait_ms",
+        "total_wait_ms"
+      ]
+    },
+    "type_agent_connected": {
+      "title": "agent_connected",
+      "properties": {
+        "type": {
+          "const": "agent_connected"
+        },
+        "agent_id": {
+          "$ref": "#/$defs/opaque_id"
+        },
+        "reservation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "leg_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/queue_id"
+        },
+        "consult": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "agent_id",
+        "reservation_id",
+        "leg_id"
+      ]
+    },
+    "type_agent_disconnected": {
+      "title": "agent_disconnected",
+      "properties": {
+        "type": {
+          "const": "agent_disconnected"
+        },
+        "agent_id": {
+          "$ref": "#/$defs/opaque_id"
+        },
+        "reservation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "leg_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "hangup",
+            "transfer",
+            "media_lost",
+            "consult_completed",
+            "supervisor_kill",
+            "expired",
+            "ended"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "agent_id",
+        "reservation_id",
+        "leg_id",
+        "reason"
+      ]
+    },
+    "type_hold_started": {
+      "title": "hold_started",
+      "properties": {
+        "type": {
+          "const": "hold_started"
+        },
+        "by": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "system"
+          ]
+        },
+        "agent_id": {
+          "$ref": "#/$defs/opaque_id"
+        }
+      },
+      "required": [
+        "type",
+        "by"
+      ]
+    },
+    "type_hold_ended": {
+      "title": "hold_ended",
+      "properties": {
+        "type": {
+          "const": "hold_ended"
+        },
+        "by": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "system"
+          ]
+        },
+        "hold_ms": {
+          "$ref": "#/$defs/duration_ms"
+        },
+        "agent_id": {
+          "$ref": "#/$defs/opaque_id"
+        }
+      },
+      "required": [
+        "type",
+        "by",
+        "hold_ms"
+      ]
+    },
+    "type_transferred": {
+      "title": "transferred",
+      "properties": {
+        "type": {
+          "const": "transferred"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "blind",
+            "warm"
+          ]
+        },
+        "target_kind": {
+          "type": "string",
+          "enum": [
+            "queue",
+            "agent",
+            "number"
+          ]
+        },
+        "from_agent_id": {
+          "$ref": "#/$defs/opaque_id"
+        },
+        "target_queue_id": {
+          "$ref": "#/$defs/queue_id"
+        },
+        "target_agent_id": {
+          "$ref": "#/$defs/opaque_id"
+        }
+      },
+      "required": [
+        "type",
+        "kind",
+        "target_kind"
+      ]
+    },
+    "type_leg_added": {
+      "title": "leg_added",
+      "properties": {
+        "type": {
+          "const": "leg_added"
+        },
+        "leg_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "customer",
+            "agent",
+            "consult",
+            "external",
+            "supervisor"
+          ]
+        },
+        "sip_call_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "media_node": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+        },
+        "leg_direction": {
+          "type": "string",
+          "enum": [
+            "inbound",
+            "outbound"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "leg_id",
+        "role",
+        "sip_call_id",
+        "media_node",
+        "leg_direction"
+      ]
+    },
+    "type_leg_removed": {
+      "title": "leg_removed",
+      "properties": {
+        "type": {
+          "const": "leg_removed"
+        },
+        "leg_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "customer",
+            "agent",
+            "consult",
+            "external",
+            "supervisor"
+          ]
+        },
+        "sip_call_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "hangup_cause": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]{1,64}$"
+        }
+      },
+      "required": [
+        "type",
+        "leg_id",
+        "role",
+        "sip_call_id",
+        "hangup_cause"
+      ]
+    },
+    "type_consent_decided": {
+      "title": "consent_decided",
+      "properties": {
+        "type": {
+          "const": "consent_decided"
+        },
+        "policy": {
+          "type": "string",
+          "enum": [
+            "announce_opt_out",
+            "opt_in",
+            "never"
+          ]
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "record",
+            "do_not_record"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "caller"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "policy",
+        "decision",
+        "source"
+      ]
+    },
+    "type_recording_started": {
+      "title": "recording_started",
+      "properties": {
+        "type": {
+          "const": "recording_started"
+        },
+        "recording_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "participant_role": {
+          "type": "string",
+          "enum": [
+            "customer",
+            "agent",
+            "consult",
+            "external",
+            "supervisor"
+          ]
+        },
+        "leg_id": {
+          "$ref": "#/$defs/uuid"
+        }
+      },
+      "required": [
+        "type",
+        "recording_id",
+        "participant_role",
+        "leg_id"
+      ]
+    },
+    "type_recording_stopped": {
+      "title": "recording_stopped",
+      "properties": {
+        "type": {
+          "const": "recording_stopped"
+        },
+        "recording_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "participant_role": {
+          "type": "string",
+          "enum": [
+            "customer",
+            "agent",
+            "consult",
+            "external",
+            "supervisor"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "ended",
+            "opt_out",
+            "error"
+          ]
+        },
+        "duration_ms": {
+          "$ref": "#/$defs/duration_ms"
+        }
+      },
+      "required": [
+        "type",
+        "recording_id",
+        "participant_role",
+        "reason",
+        "duration_ms"
+      ]
+    },
+    "type_ended": {
+      "title": "ended",
+      "properties": {
+        "type": {
+          "const": "ended"
+        },
+        "end_reason": {
+          "type": "string",
+          "enum": [
+            "completed",
+            "busy",
+            "no_answer",
+            "failed",
+            "canceled"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "enum": [
+            "caller_hangup",
+            "agent_hangup",
+            "api_hangup",
+            "flow_hangup",
+            "supervisor_kill",
+            "abandoned",
+            "voicemail",
+            "callback_kept",
+            "transferred_out",
+            "max_duration",
+            "busy",
+            "no_answer",
+            "canceled",
+            "rejected_limit",
+            "rejected_tenant_mismatch",
+            "rejected_blocked",
+            "failed_system",
+            "failed_media",
+            "failed_app",
+            "failed_unknown"
+          ]
+        },
+        "ended_by": {
+          "type": "string",
+          "enum": [
+            "customer",
+            "agent",
+            "system",
+            "api",
+            "supervisor"
+          ]
+        },
+        "duration_ms": {
+          "$ref": "#/$defs/duration_ms"
+        },
+        "ivr_ms": {
+          "$ref": "#/$defs/duration_ms"
+        },
+        "queue_ms": {
+          "$ref": "#/$defs/duration_ms",
+          "description": "The final total_wait_ms."
+        },
+        "talk_ms": {
+          "$ref": "#/$defs/duration_ms"
+        },
+        "hold_ms": {
+          "$ref": "#/$defs/duration_ms"
+        },
+        "agent_id": {
+          "$ref": "#/$defs/opaque_id"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/queue_id"
+        },
+        "recorded": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "end_reason",
+        "detail",
+        "ended_by",
+        "duration_ms"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "end_reason": {
+                "const": "completed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "detail": {
+                "enum": [
+                  "caller_hangup",
+                  "agent_hangup",
+                  "api_hangup",
+                  "flow_hangup",
+                  "supervisor_kill",
+                  "abandoned",
+                  "voicemail",
+                  "callback_kept",
+                  "transferred_out",
+                  "max_duration"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "end_reason": {
+                "const": "busy"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "detail": {
+                "const": "busy"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "end_reason": {
+                "const": "no_answer"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "detail": {
+                "const": "no_answer"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "end_reason": {
+                "const": "canceled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "detail": {
+                "const": "canceled"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "end_reason": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "detail": {
+                "enum": [
+                  "rejected_limit",
+                  "rejected_tenant_mismatch",
+                  "rejected_blocked",
+                  "failed_system",
+                  "failed_media",
+                  "failed_app",
+                  "failed_unknown"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "type_closed": {
+      "title": "closed",
+      "properties": {
+        "type": {
+          "const": "closed"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "disposition",
+            "no_agent",
+            "timeout"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "reason"
+      ]
+    }
+  }
+}

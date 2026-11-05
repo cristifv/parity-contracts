@@ -1,0 +1,19 @@
+{
+  "description": "An enterprise tenant with no sub-tenants is served itself, so it needs a placement",
+  "kind": "tenant_maps",
+  "writer_valid": false,
+  "violates": [
+    "missing_placement"
+  ],
+  "at": "/tenants/0",
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "initech",
+        "name": "Initech Group",
+        "tier": "enterprise"
+      }
+    ]
+  }
+}

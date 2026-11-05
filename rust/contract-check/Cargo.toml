@@ -1,0 +1,19 @@
+[package]
+name = "contract-check"
+version = "0.1.0"
+description = "Checks parity-contracts' schemas and golden fixtures (ADR 0001 §4.7)"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = "1"
+# Pinned to the newest release at least 14 days old (0.59 and 0.60 were days old on 2026-10-25).
+# No default features: schemas are registered by $id, nothing is fetched over the network.
+jsonschema = { version = "=0.58.6", default-features = false }
+prost-reflect = { version = "0.16", features = ["serde"] }
+serde_json = "1"
+
+[lints]
+workspace = true

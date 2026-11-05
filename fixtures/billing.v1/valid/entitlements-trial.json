@@ -1,0 +1,63 @@
+{
+  "description": "A trial (T0): seats <= 3, no numbers, capped interactions",
+  "kind": "billing",
+  "writer_valid": true,
+  "reader": "apply",
+  "record": {
+    "topic": "billing.entitlements",
+    "key": "tenant:globex",
+    "headers": {
+      "schema_version": "1",
+      "version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "tenant_id": "globex"
+    },
+    "value": {
+      "schema_version": 1,
+      "tenant_id": "globex",
+      "version": 1,
+      "state": "trial",
+      "reason": "trial_credit",
+      "plan_id": "trial",
+      "tier": "T0",
+      "seats": 3,
+      "numbers": {
+        "max": 0,
+        "types": []
+      },
+      "channels": [
+        "webrtc",
+        "chat"
+      ],
+      "cpaas": false,
+      "outbound": {
+        "pstn": false,
+        "from_inbound": false,
+        "countries": [],
+        "international": false
+      },
+      "messaging": {
+        "sms": false,
+        "whatsapp": false
+      },
+      "email": {
+        "outbound": false,
+        "daily_max": 0
+      },
+      "caps": {
+        "daily_spend_minor": 0,
+        "currency": "EUR",
+        "concurrent_outbound": 0,
+        "cps": 0,
+        "concurrent_inbound": 3,
+        "inbound_minutes_month": 3000,
+        "ai_minutes_month": 30,
+        "max_interaction_s": 1200
+      },
+      "retention_max_days": 30,
+      "trial_credit_pct": 100,
+      "period_end_ms": 1795392000000,
+      "computed_at_ms": 1792800000000
+    }
+  }
+}

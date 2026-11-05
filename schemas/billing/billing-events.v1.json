@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parity.example/schemas/billing-events/v1.json",
+  "title": "billing.events, schema_version 1",
+  "description": "Money events of bound tenants only (nothing before binding, PLAN M1). Keyed by tenant_id, headers tenant_id, schema_version, traceparent. Amounts in minor units with the currency; no personal data. Published through parity-billing's outbox: at least once; drop an event_id already applied. x-reserved names the types of later steps.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "type",
+    "at_ms",
+    "tenant_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "type": {
+      "type": "string"
+    },
+    "at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/type_tenant_signed_up"
+    },
+    {
+      "$ref": "#/$defs/type_subscription_changed"
+    },
+    {
+      "$ref": "#/$defs/type_invoice_paid"
+    },
+    {
+      "$ref": "#/$defs/type_invoice_payment_failed"
+    },
+    {
+      "$ref": "#/$defs/type_dunning_changed"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "x-reserved": [
+    "trial.credit_low",
+    "trial.ended",
+    "credit.added",
+    "credit.reversed",
+    "fraud.flagged",
+    "fraud.cleared",
+    "identity.verified"
+  ],
+  "$defs": {
+    "type_tenant_signed_up": {
+      "type": "object",
+      "required": [
+        "type",
+        "plan_id",
+        "kind"
+      ],
+      "properties": {
+        "type": {
+          "const": "tenant.signed_up"
+        },
+        "plan_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+        },
+        "kind": {
+          "enum": [
+            "trial",
+            "paid"
+          ]
+        }
+      }
+    },
+    "type_subscription_changed": {
+      "type": "object",
+      "required": [
+        "type",
+        "subscription_id",
+        "status",
+        "plan_id",
+        "seats",
+        "period_end_ms"
+      ],
+      "properties": {
+        "type": {
+          "const": "subscription.changed"
+        },
+        "subscription_id": {
+          "type": "string",
+          "pattern": "^sub_[A-Za-z0-9]{1,250}$"
+        },
+        "status": {
+          "enum": [
+            "incomplete",
+            "incomplete_expired",
+            "trialing",
+            "active",
+            "past_due",
+            "canceled",
+            "unpaid",
+            "paused"
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+        },
+        "seats": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "period_end_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "type_invoice_paid": {
+      "type": "object",
+      "required": [
+        "type",
+        "invoice_id",
+        "amount_minor",
+        "currency"
+      ],
+      "properties": {
+        "type": {
+          "const": "invoice.paid"
+        },
+        "invoice_id": {
+          "type": "string",
+          "pattern": "^in_[A-Za-z0-9]{1,250}$"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "An amount in the currency's minor unit (cents)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217"
+        }
+      }
+    },
+    "type_invoice_payment_failed": {
+      "type": "object",
+      "required": [
+        "type",
+        "invoice_id",
+        "amount_minor",
+        "currency",
+        "attempt"
+      ],
+      "properties": {
+        "type": {
+          "const": "invoice.payment_failed"
+        },
+        "invoice_id": {
+          "type": "string",
+          "pattern": "^in_[A-Za-z0-9]{1,250}$"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "An amount in the currency's minor unit (cents)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "type_dunning_changed": {
+      "type": "object",
+      "required": [
+        "type",
+        "state",
+        "previous"
+      ],
+      "properties": {
+        "type": {
+          "const": "dunning.changed"
+        },
+        "state": {
+          "enum": [
+            "trial",
+            "trial_ended",
+            "active",
+            "grace",
+            "restricted",
+            "suspended",
+            "cancelled"
+          ]
+        },
+        "previous": {
+          "enum": [
+            "trial",
+            "trial_ended",
+            "active",
+            "grace",
+            "restricted",
+            "suspended",
+            "cancelled"
+          ]
+        }
+      }
+    }
+  }
+}

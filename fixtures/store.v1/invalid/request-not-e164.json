@@ -1,0 +1,24 @@
+{
+  "description": "A number that isn't E.164: bad_request",
+  "kind": "store",
+  "writer_valid": false,
+  "violates": [
+    "schema"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "tenant.store.admin.requests",
+    "key": "acme",
+    "headers": {
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "add_number",
+      "id": "admin-api-1:add_number-0001",
+      "reply_to": "replies.admin-console",
+      "tenant_id": "acme",
+      "number": "0049301234"
+    }
+  }
+}

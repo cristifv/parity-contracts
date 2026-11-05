@@ -1,0 +1,33 @@
+{
+  "description": "A parent that doesn't exist",
+  "kind": "tenant_maps",
+  "writer_valid": false,
+  "violates": [
+    "unknown_parent"
+  ],
+  "at": "/tenants/0/parent",
+  "file": {
+    "schema_version": 1,
+    "tenants": [
+      {
+        "id": "initech-de",
+        "name": "initech-de",
+        "parent": "initrode",
+        "placement": {
+          "home_zone": "eu1",
+          "failover_zone": "eu2",
+          "zone": "eu1",
+          "cell": "eu1a",
+          "deployment_unit": "bin-a",
+          "media_track": "blue"
+        },
+        "numbers": [
+          "+15550102100"
+        ],
+        "sip_domains": [
+          "initech-de.eu1.platform.example"
+        ]
+      }
+    ]
+  }
+}

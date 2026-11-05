@@ -1,0 +1,30 @@
+{
+  "description": "Header tenant globex, body tenant acme",
+  "kind": "kafka",
+  "writer_valid": false,
+  "violates": [
+    "header_body_mismatch:tenant_id"
+  ],
+  "reader": "reply_error:bad_request",
+  "record": {
+    "topic": "interaction.commands",
+    "key": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+    "headers": {
+      "tenant_id": "globex",
+      "interaction_id": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+      "schema_version": "1",
+      "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    },
+    "value": {
+      "schema_version": 1,
+      "cmd": "originate",
+      "id": "voice-api-7d9f:0192f6a1-a000-7b00-8c00-000000000001",
+      "reply_to": "replies.parity-voice-api",
+      "tenant_id": "acme",
+      "interaction_id": "0192f6a1-8a10-7c55-b123-0a1b2c3d4e5f",
+      "from": "+447700900100",
+      "to": "+447700900123",
+      "ring_timeout_s": 30
+    }
+  }
+}

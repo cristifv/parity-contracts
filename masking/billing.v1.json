@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "description": "Masking cases for the global billing services (parity-billing, parity-frontend; parity-billing PLAN §4.5), on top of cases.v1.json, which every service passes and which stays unchanged (its consumers check its classes exactly). Same normalize rules. classify adds the class email: the value is replaced by '[email]', whatever it is (0.10.2, FE-044: logs carry ids, never an email or a hash of one, keyed or not; a hash is a membership oracle). secret adds the tokens, signatures and the hosted Stripe URLs (they authorise a payment page or a portal session). plain lists billing ids that must stay readable.",
+  "classify": {
+    "email": [
+      "email",
+      "admin_email",
+      "billing_email",
+      "adminEmail",
+      "contact_email"
+    ],
+    "secret": [
+      "access_token",
+      "client_secret",
+      "stripe_signature",
+      "Stripe-Signature",
+      "webhook_secret",
+      "turnstile_token",
+      "cf_turnstile_response",
+      "checkout_url",
+      "portal_url",
+      "verification_url",
+      "checkoutUrl",
+      "api_key",
+      "secret_key"
+    ],
+    "plain": [
+      "signup_id",
+      "billing_account_id",
+      "tenant_id",
+      "session_id",
+      "customer_id",
+      "subscription_id",
+      "event_id",
+      "plan_id",
+      "state",
+      "reply_to",
+      "stripe_event_type",
+      "billingAccountId"
+    ]
+  },
+  "mask_email": [
+    {
+      "in": "Pat@Example.com",
+      "out": "[email]"
+    },
+    {
+      "in": " pat@example.com ",
+      "out": "[email]"
+    },
+    {
+      "in": "ADMIN@acme-new.example",
+      "out": "[email]"
+    },
+    {
+      "in": "x@y.test",
+      "out": "[email]"
+    }
+  ]
+}

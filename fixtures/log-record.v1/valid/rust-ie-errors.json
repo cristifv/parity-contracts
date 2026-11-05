@@ -1,0 +1,81 @@
+{
+  "description": "Rust (tracing): a retried RPC, a deduplicated dependency error (repeat_count) and a panic with its stack.",
+  "kind": "log",
+  "writer_valid": true,
+  "violates": [],
+  "catalogues": [
+    "logging/examples/events.parity-interaction-engine.v1.json"
+  ],
+  "records": [
+    {
+      "ts": "2026-11-01T10:00:00.000Z",
+      "level": "warn",
+      "service": "parity-interaction-engine",
+      "version": "0.6.0+a1b2c3d",
+      "instance": "ie-b0-0",
+      "seq": 101,
+      "event": "routing.rpc_failed",
+      "msg": "routing call failed; retrying",
+      "component": "ie_routing_client::client",
+      "op": "parity.routing.v1.RoutingService/Enqueue",
+      "attempt": 2,
+      "outcome": "retry",
+      "duration_ms": 300,
+      "queue_id": "sales",
+      "tenant_id": "acme",
+      "xsid": "0192f3c1-6a2b-7c3d-8e4f-5a6b7c8d9e01",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "bin": "b0",
+      "error": {
+        "code": "unavailable",
+        "kind": "tonic::Status",
+        "message": "transport error: connection refused"
+      },
+      "code": {
+        "file": "crates/ie-routing-client/src/client.rs",
+        "line": 212,
+        "func": "ie_routing_client::client::enqueue"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:10.000Z",
+      "level": "warn",
+      "service": "parity-interaction-engine",
+      "version": "0.6.0+a1b2c3d",
+      "instance": "ie-b0-0",
+      "seq": 102,
+      "event": "dependency.unavailable",
+      "msg": "a dependency is unavailable",
+      "component": "ie_routing_client::client",
+      "repeat_count": 14,
+      "repeat_since": "2026-11-01T10:00:00.400Z",
+      "error": {
+        "code": "unavailable",
+        "kind": "tonic::Status"
+      },
+      "attrs": {
+        "dependency": "routing"
+      }
+    },
+    {
+      "ts": "2026-11-01T10:00:10.005Z",
+      "level": "fatal",
+      "service": "parity-interaction-engine",
+      "version": "0.6.0+a1b2c3d",
+      "instance": "ie-b0-0",
+      "seq": 103,
+      "event": "service.panic",
+      "msg": "panic",
+      "component": "interaction_engine",
+      "error": {
+        "kind": "panic",
+        "message": "called `Option::unwrap()` on a `None` value",
+        "stack": "panicked at crates/ie-core/src/machine.rs:88:9\n   0: ie_core::machine::Machine::apply\n   1: interaction_engine::calls::owner::run\n   2: tokio::runtime::task::harness::poll"
+      },
+      "code": {
+        "file": "crates/ie-core/src/machine.rs",
+        "line": 88
+      }
+    }
+  ]
+}

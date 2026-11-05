@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "service": "parity-rs",
+  "description": "Starter catalogue for parity-rs (parity-contracts 0.16.0). Copy it to the service's repository as logging/events.parity-rs.v1.json; the service owns it from then on.",
+  "events": {
+    "request.handled": {
+      "description": "A tenant routing request was answered (one per request).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "request_id",
+        "op",
+        "outcome"
+      ]
+    },
+    "request.refused": {
+      "description": "A request was refused (error.code, attrs.rule).",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "requires": [
+        "request_id",
+        "op",
+        "error"
+      ],
+      "dedup": {
+        "window_ms": 10000,
+        "key": [
+          "op"
+        ]
+      }
+    },
+    "request.dead_lettered": {
+      "description": "A request without a valid id or reply_to was dead-lettered (attrs.reason).",
+      "levels": [
+        "warn"
+      ],
+      "attrs": [
+        "reason"
+      ]
+    },
+    "saga.accepted": {
+      "description": "A saga was accepted (attrs.kind).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "saga_id",
+        "op_id"
+      ],
+      "attrs": [
+        "kind"
+      ]
+    },
+    "saga.state_changed": {
+      "description": "A saga moved (cause: the input that moved it).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "saga_id",
+        "op_id"
+      ],
+      "attrs": [
+        "kind"
+      ],
+      "transition": true
+    },
+    "saga.finished": {
+      "description": "A saga ended (attrs.saga_outcome: done, aborted, cancelled, compensated, rolled_back, stopped).",
+      "levels": [
+        "info",
+        "warn"
+      ],
+      "requires": [
+        "saga_id",
+        "op_id"
+      ],
+      "attrs": [
+        "kind",
+        "saga_outcome"
+      ]
+    },
+    "saga.blocked": {
+      "description": "A saga needs an operator (resolve_saga).",
+      "levels": [
+        "error"
+      ],
+      "requires": [
+        "saga_id",
+        "op_id"
+      ]
+    },
+    "placement.decided": {
+      "description": "place_tenant chose a zone and unit (decision: the candidate zones).",
+      "levels": [
+        "info",
+        "debug"
+      ],
+      "requires": [
+        "tenant_id",
+        "saga_id"
+      ],
+      "decision": true,
+      "sample_rate": 1.0
+    },
+    "placement.written": {
+      "description": "parity-store accepted a placement write (attrs.version).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id",
+        "saga_id"
+      ],
+      "attrs": [
+        "version"
+      ]
+    },
+    "placement.write_retried": {
+      "description": "A placement write was sent again with the same id.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "tenant_id",
+        "saga_id"
+      ],
+      "attrs": [
+        "attempt_id"
+      ]
+    },
+    "assignment.written": {
+      "description": "A tenant's assignment was written in the zone's etcd (attrs.epoch).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id",
+        "saga_id"
+      ],
+      "attrs": [
+        "unit",
+        "epoch"
+      ]
+    },
+    "assignment.seeded": {
+      "description": "A missing assignment was written from the placement.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id"
+      ],
+      "attrs": [
+        "unit"
+      ]
+    },
+    "assignment.write_failed": {
+      "description": "An assignment write failed or lost its compare.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "tenant_id",
+        "error"
+      ]
+    },
+    "handover.reported": {
+      "description": "A per-tenant service reported a handover (attrs.reporter).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id"
+      ],
+      "attrs": [
+        "reporter",
+        "epoch"
+      ]
+    },
+    "unit.changed": {
+      "description": "A unit's role, release, readiness or health changed.",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "unit",
+        "role"
+      ]
+    },
+    "unit.scaled": {
+      "description": "A unit's workloads were scaled (attrs.replicas).",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "unit",
+        "replicas"
+      ]
+    },
+    "rollout.auto_rollback": {
+      "description": "A failing canary started an automatic rollback.",
+      "levels": [
+        "error"
+      ],
+      "requires": [
+        "saga_id",
+        "op_id"
+      ],
+      "attrs": [
+        "unit"
+      ]
+    },
+    "leader.acquired": {
+      "description": "This instance became the zone's leader.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "zone",
+        "leader_epoch"
+      ]
+    },
+    "leader.lost": {
+      "description": "This instance lost the zone's leadership.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "zone",
+        "leader_epoch"
+      ]
+    },
+    "store_copy.ready": {
+      "description": "The copy of tenant.store.state reached its end offsets (attrs.revision).",
+      "levels": [
+        "info"
+      ],
+      "attrs": [
+        "revision"
+      ]
+    },
+    "drift.detected": {
+      "description": "An assignment names another unit than the placement, with no saga to explain it.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "tenant_id"
+      ],
+      "attrs": [
+        "store_unit",
+        "assignment_unit"
+      ]
+    },
+    "import.row_applied": {
+      "description": "The import job wrote one tenant_route row.",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id"
+      ]
+    },
+    "import.row_skipped": {
+      "description": "The import job kept what parity-store has (attrs.reason).",
+      "levels": [
+        "info"
+      ],
+      "requires": [
+        "tenant_id"
+      ],
+      "attrs": [
+        "reason"
+      ]
+    },
+    "import.row_failed": {
+      "description": "The import job failed one row.",
+      "levels": [
+        "warn"
+      ],
+      "requires": [
+        "tenant_id",
+        "error"
+      ]
+    }
+  }
+}
